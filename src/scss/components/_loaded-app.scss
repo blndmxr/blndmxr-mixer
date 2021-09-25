@@ -1,0 +1,71 @@
+/** Variables **/
+$mobile-top-bar-height: 56px;
+$mobile-navbar-height: 60px;
+
+$desktop-top-bar-height: 56px;
+
+// For a Mobile view
+@include media-breakpoint-down(xs) {
+  .App-wrapper {
+    display: grid;
+    grid-template-rows: $mobile-top-bar-height auto $mobile-navbar-height;
+    grid-template-areas: 'topbar topbar topbar topbar topbar' 'main main main main main' 'navbar navbar navbar navbar navbar';
+    width: 100vw; // viewport bug is driving nuts -> TODO: check emulator
+    height: 100vh;
+    background: $theme-blue;
+  }
+  .App-mobile-navbar {
+    grid-area: navbar;
+    background: $theme-blue;
+    color: $white;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// For a Desktop view
+
+@include media-breakpoint-up(sm) {
+  .App-wrapper {
+    display: grid;
+    grid-template-rows: $desktop-top-bar-height auto;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-areas: 'sidenav topbar topbar topbar topbar topbar' 'sidenav main main main main main';
+    min-height: 100vh;
+    background: $theme-blue;
+  }
+
+  .App-footer {
+    background: $bg;
+    color: $body-text;
+    width: 100%;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: smaller;
+  }
+  .App-footer a {
+    color: darken($body-text, 25%);
+  }
+  .App-footer a:hover {
+    color: darken($body-text, 25%);
+  }
+}
+@include media-breakpoint-up(md) {
+  .App-wrapper {
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-areas:
+      'sidenav topbar topbar topbar topbar topbar topbar topbar topbar topbar'
+      'sidenav main main main main main main main main main';
+  }
+}
+
+.main-heading {
+  margin-bottom: 3rem;
+  letter-spacing: 0.3rem;
+  text-transform: uppercase;
+}

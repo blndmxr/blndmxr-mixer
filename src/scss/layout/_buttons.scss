@@ -1,0 +1,22 @@
+//Buttons
+.btn-blindmixer {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-blindmixer-sm {
+  font-weight: 600;
+
+  color: #fff;
+}
+.submit-button-container {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+  font-weight: 600;
+}
