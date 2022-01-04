@@ -23,8 +23,9 @@ type LightningInvoiceProps = {
 export default function LightningPayment(props: LightningInvoiceProps) {
   let amount = GetLightningPaymentRequestAmount(props.paymentRequest);
 
+  const claimable = props.claimable.toPOD();
   if (amount === ' ') {
-    amount = props.claimable.toPOD().amount;
+    amount = claimable.amount;
   }
 
   const statuses = useClaimableStatuses(props.claimableHash);
@@ -225,6 +226,16 @@ export default function LightningPayment(props: LightningInvoiceProps) {
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
             <div className="claimable-text-container">{memo}</div>
+          </Col>
+        </Row>
+        <Row>
+          <Col sm={{ size: 2, offset: 0 }}>
+            <p className="address-title">Decay: </p>
+          </Col>
+          <Col sm={{ size: 8, offset: 0 }}>
+            <div className="claimable-text-container">
+              {`${claimable.decay} sat`}
+            </div>
           </Col>
         </Row>
         <Row>

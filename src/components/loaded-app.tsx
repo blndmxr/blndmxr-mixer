@@ -29,6 +29,8 @@ import Payments from './tables/payments';
 import { wallet } from '../state/wallet';
 import { ToastContainer, toast } from 'react-toastify';
 import makeRequest from '../wallet/requests/make-request';
+import getCustodianInfo from '../wallet/requests/get-custodian-info';
+import { CustodianInfo } from 'blindmixer-lib';
 
 function NoMatch(params: RouteComponentProps<any>) {
   return (
@@ -49,6 +51,50 @@ export default function LoadedApp() {
   const Router: any = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
   
   useEffect(() => {
+    (async () =>  {
+      // automatically acked
+      const custodian = await getCustodianInfo(`${wallet.config.custodianUrl}/#${wallet.config.custodian.acknowledgementKey.toPOD()}`);
+      if (custodian instanceof Error || custodian instanceof CustodianInfo) {
+        toast.error("Can't fetch new custodian keys")
+        throw custodian;
+      }
+
+      if (wallet.config.custodian.blindCoinKeys.length < custodian.ci.blindCoinKeys.length) { 
+        // check if our local copy matches custodians new old keys 
+        
+        // this is easier?
+        const localOldestFirst = [...wallet.config.custodian.blindCoinKeys].reverse(); // don't mutate
+        const newOldestFirst = [...custodian.ci.blindCoinKeys].reverse();
+      
+        for (let i = 0; i < wallet.config.custodian.blindCoinKeys.length; i++) {
+          const localOldKeys = localOldestFirst[i];
+          const newOldFetchedKeys = newOldestFirst[i];
+          // check all individual keys
+          for (let k = 0; k < localOldKeys.length; k++) {
+            
+            const localOldKey = localOldKeys[k];
+            const newOldKey = newOldFetchedKeys[k];
+
+            if (localOldKey.toPOD() != newOldKey.toPOD()) { 
+              toast.error('custodian fed invalid old keys')
+              throw `custodian fed invalid/incorrect old keys ${localOldKey.toPOD()} while the custodian gives us ${newOldKey.toPOD()}`;
+            }
+          }
+        }
+        // push new signature, push new blinded coin keys, assume they are valid
+        wallet.config.custodian.blindCoinKeys = custodian.ci.blindCoinKeys;
+        const walletConfig = await wallet.db.get('config', 1);
+        if (!walletConfig) {
+          return new Error('Invalid config?');
+        }
+        walletConfig.custodian.blindCoinKeys = custodian.ci.blindCoinKeys.map(ck => (ck.map(c => c.toPOD())));
+        walletConfig.sig = custodian.sigP.toPOD();
+        wallet.config.pubkey = custodian.ephemeral.toPOD();
+        wallet.db.put('config', walletConfig);
+        toast.success("Updated your signing keys!")
+      }
+    })();
+
     (async () => {
       const response = await makeRequest(`${wallet.config.custodianUrl}/tor-check`) as boolean
     

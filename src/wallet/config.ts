@@ -150,7 +150,7 @@ export default class Config {
       const newOwner = this.deriveOwner(claimHash, blindingNonce);
       const newOwnerPub = newOwner.toPublicKey();
 
-      const [_unblinder, blindedOwner] = hi.blindMessage(blindingSecret, blindingNonce, this.custodian.blindCoinKeys[magnitude.n], newOwnerPub.buffer);
+      const [_unblinder, blindedOwner] = hi.blindMessage(blindingSecret, blindingNonce, this.custodian.blindCoinKeys[0][magnitude.n], newOwnerPub.buffer);
 
       coinRequests.push({ blindingNonce, blindedOwner, magnitude: magnitude });
     }

@@ -185,6 +185,16 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
         </Row>
         <Row>
           <Col sm={{ size: 2, offset: 0 }}>
+            <p className="address-title">Decay: </p>
+          </Col>
+          <Col sm={{ size: 8, offset: 0 }}>
+            <div className="claimable-text-container">
+              {`${claimable.decay} sat`}
+            </div>
+          </Col>
+        </Row>
+        <Row>
+          <Col sm={{ size: 2, offset: 0 }}>
             <p className="address-title">Created: </p>
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>

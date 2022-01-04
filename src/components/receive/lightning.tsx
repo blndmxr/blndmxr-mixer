@@ -61,7 +61,7 @@ export default function ReceiveLightning(props: RouteComponentProps) {
               use this invoice for internal transfers!
             </code>
           ) : undefined}
-                  {wallet.config.custodian.wipeDate  && (new Date(wallet.config.custodian.wipeDate) < new Date(Date.now() + 48*60*60*1000)) && (
+                  {/* {wallet.config.custodian.wipeDate  && (new Date(wallet.config.custodian.wipeDate) < new Date(Date.now() + 48*60*60*1000)) && (
                 <div className="text-container">
                 <p >
                   <span>
@@ -70,7 +70,7 @@ export default function ReceiveLightning(props: RouteComponentProps) {
                   The custodian will wipe in less than two days or has already wiped. Please do not deposit any more funds!
                 </p>
               </div>
-        )  }
+        )  } */}
           <FormGroup row>
             <Col className="submit-button-container">
               <Button color="success" className="btn-blindmixer" onClick={() => genInvoice()}>

@@ -37,7 +37,12 @@ export default function App() {
     return <p>Loading...</p>;
   }
   if (existingDbs.length < 1 && window.location.pathname !== '/restore') {
-    return <CreateWallet setIsWalletSet={setIsWalletSet} />;
+    return <Router>
+    <Switch>
+      <Route path="/restore" exact render={(props) => <Restore {...props} isMobile={mobileView} setIsWalletSet={setIsWalletSet} />} />
+      <Route render={(props) => <CreateWallet setIsWalletSet={setIsWalletSet} />} />
+    </Switch>
+  </Router>
   }
 
   return (

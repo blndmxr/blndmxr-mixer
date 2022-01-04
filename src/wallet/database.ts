@@ -230,7 +230,7 @@ export default class Database extends EventEmitter {
     }
 
     const { claimableHash, claimRequest, blindedReceipts } = claimedStatus;
-    const { coinRequests } = claimRequest;
+    const { coinRequests, coinPeriod } = claimRequest;
 
     util.mustEqual(coinRequests.length, blindedReceipts.length);
 
@@ -244,7 +244,7 @@ export default class Database extends EventEmitter {
       const blindingSecret = this.config.deriveBlindingSecret(claimableHash, coinClaim.blindingNonce);
       const newOwner = this.config.deriveOwner(claimableHash, coinClaim.blindingNonce).toPublicKey();
 
-      const signer = this.config.custodian.blindCoinKeys[coinClaim.magnitude.n];
+      const signer = this.config.custodian.blindCoinKeys[this.config.custodian.blindCoinKeys.length - coinPeriod][coinClaim.magnitude.n];
 
       const [unblinder, blindedOwner] = hi.blindMessage(blindingSecret, coinClaim.blindingNonce, signer, newOwner.buffer);
 
@@ -253,7 +253,7 @@ export default class Database extends EventEmitter {
       const existenceProof = hi.unblind(unblinder, blindedExistenceProof);
       util.mustEqual(existenceProof.verify(newOwner.buffer, signer), true);
 
-      const coin = new hi.Coin(newOwner, coinClaim.magnitude, existenceProof);
+      const coin = new hi.Coin(newOwner, coinClaim.magnitude, existenceProof, coinPeriod); // length 1, index 0 = period 1 
       coinStore.put({
         claimableHash: claimableHash.toPOD(),
         blindingNonce: coinClaim.blindingNonce.toPOD(),
@@ -364,7 +364,7 @@ export default class Database extends EventEmitter {
       //   throw new Error(`${claimResponse.toPOD().hash} is invalid!`)
       // }
 
-      await this.processStatuses([claimResponse]);
+      await this.processStatuses([claimResponse], true);
       break;
     }
   }
@@ -381,7 +381,7 @@ export default class Database extends EventEmitter {
     }
     return resp;
   }
-  private async processStatuses(statuses: hi.Acknowledged.Status[]) {
+  private async processStatuses(statuses: hi.Acknowledged.Status[], isNew?: boolean) {
     if (statuses.length === 0) {
       return;
     }
@@ -412,7 +412,7 @@ export default class Database extends EventEmitter {
           const claimedStatus = status.contents;
 
           const { claimableHash, claimRequest, blindedReceipts } = claimedStatus;
-          const { coinRequests } = claimRequest;
+          const { coinRequests, coinPeriod } = claimRequest;
           if (!claimRequest.authorization) {
             throw new Error('No auth provided?! what the hell?!');
           }
@@ -437,16 +437,22 @@ export default class Database extends EventEmitter {
             throw new Error('Custodian is trying to cheat us by not sending requested amount of receipts back.');
           }
 
+          if (isNew) { 
+            if (coinPeriod != this.config.custodian.blindCoinKeys.length) { 
+              throw new Error('Custodian is trying to cheat us by signing for an older period, thus increasing the decay (?)')
+            }
+          }
+
           // We signed the request, so we can assume?! that the nonces and owners are valid, now we check if the receipts are what we expect them to be
           for (let i = 0; i < blindedReceipts.length; i++) {
             const blindedReceipt = blindedReceipts[i];
             const originalClaim = coinRequests[i];
-            const signee = this.config.custodian.blindCoinKeys[originalClaim.magnitude.n];
 
-            const isEqual = blindedReceipt.verify(originalClaim.blindingNonce, originalClaim.blindedOwner.c, signee);
+            const signee = this.config.custodian.blindCoinKeys[this.config.custodian.blindCoinKeys.length - coinPeriod];
+            const isEqual = blindedReceipt.verify(originalClaim.blindingNonce, originalClaim.blindedOwner.c, signee[originalClaim.magnitude.n]);
             if (!isEqual) {
               throw new Error(
-                `Custodian is trying to feed us invalid coins! ${blindedReceipt.toPOD()}, ${originalClaim.blindedOwner.toPOD()}, ${signee.toPOD()}`
+                `Custodian is trying to feed us invalid coins! ${blindedReceipt.toPOD()}, ${originalClaim.blindedOwner.toPOD()}, ${signee[originalClaim.magnitude.n].toPOD()}`
               );
             }
           }
@@ -563,7 +569,16 @@ export default class Database extends EventEmitter {
     const coins = await this.listUnspent();
     let sum = 0;
     for (const coin of coins) {
-      sum += 2 ** coin.magnitude;
+    let multiplier = ((this.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100)
+    
+    if (multiplier > 1) { 
+      multiplier = 1;
+    } else if (multiplier < 0) { 
+      multiplier = 0;
+    }
+    const decay = Math.round(((2 ** coin.magnitude) * multiplier));
+
+    sum += ((2 ** coin.magnitude) - decay);
     }
     return sum;
   }
@@ -577,7 +592,17 @@ export default class Database extends EventEmitter {
 
     let sum = 0;
     for (const coin of candidates) {
-      sum += 2 ** coin.magnitude;
+      let multiplier = ((this.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100)
+
+      if (multiplier > 1) { 
+        multiplier = 1;
+      } else if (multiplier < 0) { 
+        multiplier = 0;
+      } 
+
+      const decay = Math.round(((2 ** coin.magnitude) * multiplier));
+  
+      sum += ((2 ** coin.magnitude) - decay);
     }
     return sum;
   }
@@ -1061,18 +1086,18 @@ export default class Database extends EventEmitter {
   }
 
   public async sendLightningPayment(paymentRequest: string, amount: number, fee: number) {
-    return this.sendAbstractTransfer((inputs: hi.Coin[]) => new hi.LightningPayment({ inputs, amount, fee }, paymentRequest), amount + fee);
+    return this.sendAbstractTransfer((inputs: hi.Coin[], decay: number) => new hi.LightningPayment({ inputs, amount, fee, decay }, paymentRequest), amount + fee);
   }
 
   public async sendHookout(priority: 'CUSTOM' | 'IMMEDIATE' | 'FREE' | 'BATCH', bitcoinAddress: string, amount: number, fee: number, rbf: boolean) {
-    return this.sendAbstractTransfer((inputs: hi.Coin[]) => new hi.Hookout({ inputs, amount, fee }, bitcoinAddress, priority, rbf), amount + fee);
+    return this.sendAbstractTransfer((inputs: hi.Coin[], decay: number) => new hi.Hookout({ inputs, amount, fee, decay }, bitcoinAddress, priority, rbf), amount + fee);
   }
 
   public async sendFeeBump(txid: Uint8Array, fee: number, amount: number, confTarget: number) {
-    return this.sendAbstractTransfer((inputs: hi.Coin[]) => new hi.FeeBump({ inputs, amount, fee }, txid, confTarget), amount + fee);
+    return this.sendAbstractTransfer((inputs: hi.Coin[], decay: number) => new hi.FeeBump({ inputs, amount, fee, decay }, txid, confTarget), amount + fee);
   }
   private async sendAbstractTransfer(
-    cstr: (inputs: hi.Coin[]) => hi.LightningPayment | hi.Hookout | hi.FeeBump,
+    cstr: (inputs: hi.Coin[], decay: number) => hi.LightningPayment | hi.Hookout | hi.FeeBump,
     totalToSend: number
   ): Promise<string | hi.Hash> {
     const transaction = this.db.transaction(['events', 'coins', 'claimables'], 'readwrite');
@@ -1085,12 +1110,13 @@ export default class Database extends EventEmitter {
     }
 
     const inputs = coinsToUse.found.map((coin) => util.notError(hi.Coin.fromPOD(coin)));
+    const decay = coinsToUse.decay;
     hi.AbstractTransfer.sort(inputs);
 
     // const inputHash = hi.Hash.fromMessage('inputHash', ...inputs.map(i => i.buffer));
     // const change = this.deriveClaimableClaimant(inputHash).toPublicKey();
 
-    const abtransfer = cstr(inputs);
+    const abtransfer = cstr(inputs, decay);
 
     const owners: hi.PrivateKey[] = [];
 

@@ -41,23 +41,23 @@ function TopBar(props: RouteComponentProps & { isMobile: boolean }) {
 
   const balance = useBalance();
   let location = useLocation();
-  let TDifference: number | undefined;
-  if (wallet.config.custodian.wipeDate) {
-    TDifference = +new Date(wallet.config.custodian.wipeDate) - +new Date();
-  }
-  let warning: undefined | JSX.Element = undefined;
-  if (TDifference && TDifference / (1000 * 60 * 60 * 24) < 7 && location.pathname === '/') {
-    warning = props.isMobile ? (
-      <Link to="/faq"><Button color="light">
-     <i className='fa fa-exclamation-triangle'/> Warning!
-      </Button></Link>
-    ) : (
-      <Link to="/faq"><Button color="light">
-        {' '}
-      <i className='fa fa-exclamation-triangle'/> Warning! It seems that this custodian will soon wipe or has already wiped!
-      </Button></Link>
-    );
-  }
+  // let timeDifference: number | undefined;
+  // if (wallet.config.custodian.wipeDate) {
+  //   timeDifference = +new Date(wallet.config.custodian.wipeDate) - +new Date();
+  // }
+  // let warning: undefined | JSX.Element = undefined;
+  // if (timeDifference && timeDifference / (1000 * 60 * 60 * 24) < 7 && location.pathname === '/') {
+  //   warning = props.isMobile ? (
+  //     <Link to="/faq"><Button color="light">
+  //    <i className='fa fa-exclamation-triangle'/> Warning!
+  //     </Button></Link>
+  //   ) : (
+  //     <Link to="/faq"><Button color="light">
+  //       {' '}
+  //     <i className='fa fa-exclamation-triangle'/> Warning! It seems that this custodian will soon wipe or has already wiped!
+  //     </Button></Link>
+  //   );
+  // }
 
   return (
     <div className="top-bar">
@@ -71,7 +71,8 @@ function TopBar(props: RouteComponentProps & { isMobile: boolean }) {
         )}
         {/* TODO make warning class  */}
         <span className="wallet-info">
-          {warning} {' '} {wallet.config.custodian.currency === 'tBTC' ? TestnetAlert(props.isMobile) : undefined}
+          {/* {warning} */}
+           {' '} {wallet.config.custodian.currency === 'tBTC' ? TestnetAlert(props.isMobile) : undefined}
           <b style={{ fontWeight: 'bold' }}>{props.isMobile ? '' : wallet.db.name} </b> {balance + ' sat'}
         </span>
         <div className="nav-item-right">

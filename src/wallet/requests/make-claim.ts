@@ -5,6 +5,8 @@ import makeRequest, { RequestError } from './make-request';
 import genNonces from './gen-nonces';
 import Config from '../config';
 import { notError } from '../../util';
+import { toast } from 'react-toastify';
+import { wallet } from '../../state/wallet';
 
 export default async function makeClaim(config: Config, claimant: hi.PrivateKey, claimable: hi.Claimable, coinsMagnitudes: hi.Magnitude[], fee: number) {
   // We are using the hash of the private key as the blinding secret, in case we need to reveal it
@@ -21,7 +23,8 @@ export default async function makeClaim(config: Config, claimant: hi.PrivateKey,
 
     const coinsRequest = config.deriveCoinsRequest(claimHash, nonces, coinsMagnitudes);
 
-    const claimReq = hi.ClaimRequest.newAuthorized(claimHash, coinsRequest, claimant, fee);
+    // if the period switches between the last refresh and the coin derivation, ask the custodian to notice us.
+    const claimReq = hi.ClaimRequest.newAuthorized(claimHash, coinsRequest, claimant, fee, wallet.config.custodian.blindCoinKeys.length);
 
     let claimResp = await makeRequest<any>(config.custodianUrl + '/claim', claimReq.toPOD());
 
@@ -30,6 +33,12 @@ export default async function makeClaim(config: Config, claimant: hi.PrivateKey,
         console.warn('server asked us to retry with a different nonce (very normal). Retry: ', retry);
         continue;
       }
+
+      if (claimResp.message === 'WRONG_KEYS') { 
+        toast.error("Please reload your wallet and try again! Missing newest signing keys!");
+        throw new Error('Invalid keys, expected a different signing period that we are locally on, please calculate yourself if this is correct!');
+      }
+
       return claimResp;
     }
 

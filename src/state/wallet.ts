@@ -178,7 +178,7 @@ export function useBalance(): number {
       cleanup1();
       cleanup2();
     };
-  }, []);
+  }, [wallet.config.custodian.blindCoinKeys]); // if it changes after rerendering (when new keys are loaded)
 
   return balance;
 }

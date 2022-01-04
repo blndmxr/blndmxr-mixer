@@ -18,11 +18,11 @@ export default function Backup() {
   const recoverJSON = (data: Blob) => {
     const fileReader = new FileReader();
     fileReader.readAsText(data, 'UTF-8');
-    fileReader.onload = (data) => {
-      if (data.target) {
-        if (data.target.result) {
-          if (typeof data.target.result === 'string') {
-            const json = JSON.parse(data.target.result) as Array<Backup>;
+    fileReader.onload = (d) => {
+      if (d.target) {
+        if (d.target.result) {
+          if (typeof d.target.result === 'string') {
+            const json = JSON.parse(d.target.result) as Array<Backup>;
             for (const k in json) {
               localStorage.setItem(k, json[k] as any);
             }
@@ -71,14 +71,14 @@ export default function Backup() {
     }
     getSendType();
   }, [address]);
-  //
+
   useEffect(() => {
     if (statuses != undefined && sendType.kind === 'bitcoin') {
       reRender(true)
     }
   }, [statuses, sendType])
 
-
+ 
   useEffect(() => {
 
     if (address != null) {
@@ -92,37 +92,50 @@ export default function Backup() {
       for (let i = 0; i < statuses.length; i++) {
         const element =  statuses[i];
         if (element instanceof Claimed) {  
-          for (let i = 0; i < element.blindedReceipts.length; i++) {
-            const blindedMessage = element.claimRequest.coinRequests[i].blindedOwner
-            const blindedSig = element.blindedReceipts[i]
-            const blindNonce = element.claimRequest.coinRequests[i].blindingNonce
-            
+          for (let k = 0; k < element.blindedReceipts.length; k++) {
+            const blindedMessage = element.claimRequest.coinRequests[k].blindedOwner
+            const blindedSig = element.blindedReceipts[k]
+            const blindNonce = element.claimRequest.coinRequests[k].blindingNonce
+                    
             const blindingsecret = wallet.config.deriveBlindingSecret(element.claimableHash, blindNonce)
-            const newOwner = wallet.config.deriveOwner(element.claimableHash, element.claimRequest.coinRequests[i].blindingNonce)
-            const magnitude = element.claimRequest.coinRequests[i].magnitude
-            const signer = wallet.config.custodian.blindCoinKeys[magnitude.n]
-            const [u, s] = hi.blindMessage(blindingsecret, blindNonce, signer, newOwner.toPublicKey().buffer )
-            if (blindedMessage.toPOD() != s.toPOD()) throw 's'
+            const newOwner = wallet.config.deriveOwner(element.claimableHash, element.claimRequest.coinRequests[k].blindingNonce)
+            const magnitude = element.claimRequest.coinRequests[k].magnitude
             
-            // quick check to verify blinded and unblinded as validly signed
-            // we should probably not do this as it takes a good amount of resources when mapping for 1000+ claims
-    
-            if (!blindedSig.verify(blindNonce, blindedMessage.c, signer)) throw 'invalid blindsig somehow' // impossible
-            const coinSig = hi.unblind(u, blindedSig)
-            const coin = new hi.Coin(newOwner.toPublicKey(), magnitude, coinSig)
-            if (!coin.receipt.verify(newOwner.toPublicKey().buffer,  wallet.config.custodian.blindCoinKeys[magnitude.n])) throw 'invalid unblinded coin somehow' // impossible
-    
-            const priv = hi.PrivateKey.fromBytes(blindingsecret)
-            if (priv instanceof Error) throw priv
-
-            // just take the address from string...
-            const message = hi.Buffutils.fromString(address)
-            const signature = hi.Signature.compute(message, newOwner)
-            if (!signature.verify(message, newOwner.toPublicKey())) throw signature
-
-            // the only thing really needed is the blindedmessage + blinded sig the custodian can find the claimable hash, nonces themselves etc.
-            coinArr.push({coin: coin.toPOD(), blindedMessage: blindedMessage.toPOD(), blindedSig: blindedSig.toPOD(), blindNonce: blindNonce.toPOD(), keys: priv.toPOD(), message: address, signature: signature.toPOD(), claimableHash: element.claimableHash.toPOD()})
-          }
+            const blindKeySet =  wallet.config.custodian.blindCoinKeys[wallet.config.custodian.blindCoinKeys.length - element.claimRequest.coinPeriod];
+              
+            const signer = blindKeySet[magnitude.n]
+            const [u, s] = hi.blindMessage(blindingsecret, blindNonce, signer, newOwner.toPublicKey().buffer)
+            if (blindedMessage.toPOD() != s.toPOD()) {
+              throw "invalid BlindedMessage";
+            }
+              
+              // quick check to verify blinded and unblinded as validly signed
+              // we should probably not do this as it takes a good amount of resources when mapping for 1000+ claims
+      
+              if (!blindedSig.verify(blindNonce, blindedMessage.c, signer)) {
+                throw "invalid blinded sig";
+              }
+              const coinSig = hi.unblind(u, blindedSig)
+              const coin = new hi.Coin(newOwner.toPublicKey(), magnitude, coinSig, element.claimRequest.coinPeriod)
+              if (!coin.receipt.verify(newOwner.toPublicKey().buffer,  blindKeySet[magnitude.n])) {
+                 throw "invalid unblinded sig"; // impossible
+              }
+      
+              const priv = hi.PrivateKey.fromBytes(blindingsecret)
+              if (priv instanceof Error) {
+                throw priv;
+              }
+  
+              // just take the address from string...
+              const message = hi.Buffutils.fromString(address)
+              const signature = hi.Signature.compute(message, newOwner)
+              
+              if (!signature.verify(message, newOwner.toPublicKey())) {
+                throw signature;
+              } 
+  
+              coinArr.push({coin: coin.toPOD(), blindedMessage: blindedMessage.toPOD(), blindedSig: blindedSig.toPOD(), blindNonce: blindNonce.toPOD(), keys: priv.toPOD(), message: address, signature: signature.toPOD(), claimableHash: element.claimableHash.toPOD()})
+         }
         }
       }
       setCoins(coinArr)

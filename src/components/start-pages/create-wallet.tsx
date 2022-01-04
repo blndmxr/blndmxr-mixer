@@ -6,6 +6,7 @@ import { Button, Form, FormGroup, Label, Input, Col, UncontrolledCollapse } from
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
 import LeftPanel from './left-panel';
+import { Link } from 'react-router-dom';
 
 const defaultCustodian = 'https://mainnet.blindmixer.com/#pubmp1qd3ahjyuxu5jv7ekvwdz6asjmud0mcvhu8qtml6ju36fck5av4l9x7lkrf0';
 
@@ -78,13 +79,9 @@ export default function CreateWallet(props: any & { isMobile: boolean }) {
             </Col>
           </FormGroup>
 
-          {/* <small className="text-secondary">
-            By creating a wallet submit you are agreeing to blindmixer's <a href="https://blindmixer.com/tos">Terms and Conditions</a>,{' '}
-            <a href="https://blindmixer.com/cookies">Cookies</a> and <a href="https://blindmixer.com/privacy-policy">Privacy Policy</a>.
-          </small> */}
         </Form>
         <p>
-          Already have a wallet? <a href="/restore">Restore</a>{' '}
+          Already have a wallet? <Link to="/restore">Restore{' '}</Link>
         </p>
       </div>
     </div>
