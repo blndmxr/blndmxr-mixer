@@ -8,7 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
 import LeftPanel from './left-panel';
 
-const defaultCustodian = 'https://mainnet.blindmixer.com/#pubmp1qd3ahjyuxu5jv7ekvwdz6asjmud0mcvhu8qtml6ju36fck5av4l9x7lkrf0';
+const defaultCustodian = 'https://mainnet.blindmixer.com/#pubmp1qv83cyx8m8acc4j86j6g5rdyd30g0rszh2ahed2g5gxemgnyzc69v8z0daw';
 
 export default function CreateWallet(props: any & { isMobile: boolean }) {
   const [walletName, setWalletName] = useState('main');
@@ -50,8 +50,8 @@ export default function CreateWallet(props: any & { isMobile: boolean }) {
             <Col sm={{ size: 8, offset: 0 }}>
               <Input value={custodianUrl} name="custodianUrl" onChange={(e) => setCustodianUrl(e.target.value)} list="default=custodian-urls" />
               <datalist id="default=custodian-urls">
-              <option value="https://mainnet.blindmixer.com/#pubmp1qd3ahjyuxu5jv7ekvwdz6asjmud0mcvhu8qtml6ju36fck5av4l9x7lkrf0"/>
-              <option value="https://testnet.blindmixer.com/#pubmp1q0mzx3kvsua5vjd3pcz9ny4d63ehgdfa4x4738480s6dqr9t2j9nzg82z6p"/>
+              <option value="https://mainnet.blindmixer.com/#pubmp1qv83cyx8m8acc4j86j6g5rdyd30g0rszh2ahed2g5gxemgnyzc69v8z0daw"/>
+              <option value="https://testnet.blindmixer.com/#pubmp1qf98kxatpw43mqjft6j72dps5wn66yzp47k3zm0yn4skhedv32x5sphklj2"/>
 
 
               </datalist>
