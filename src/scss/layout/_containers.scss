@@ -3,6 +3,8 @@
   background: $bg;
   padding: 2rem;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 // @include media-breakpoint-down(xs) {

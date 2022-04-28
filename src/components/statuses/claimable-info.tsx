@@ -78,7 +78,12 @@ export default function ClaimableInfo(props: RouteComponentProps<{ hash: string 
       case 'LightningInvoice':
         return (
           c instanceof hi.Acknowledged.default && (
-            <LightningInvoice paymentRequest={claimableDoc.paymentRequest} created={claimableDoc.created} claimableHash={claimableDoc.hash} claimable={c} />
+            <LightningInvoice
+              paymentRequest={claimableDoc.paymentRequest}
+              created={claimableDoc.created}
+              claimableHash={claimableDoc.hash}
+              claimable={c as hi.LightningInvoice & Partial<hi.Acknowledged.Claimable>}
+            />
           )
         );
       case 'LightningPayment':
@@ -87,7 +92,6 @@ export default function ClaimableInfo(props: RouteComponentProps<{ hash: string 
             <LightningPayment
               paymentRequest={claimableDoc.paymentRequest}
               created={claimableDoc.created}
-              memo=""
               claimableHash={claimableDoc.hash}
               claimable={c as hi.LightningPayment & Partial<hi.Acknowledged.Claimable>}
             />

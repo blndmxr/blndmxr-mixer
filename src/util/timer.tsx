@@ -31,7 +31,7 @@ export default class Timer extends Component<{ p: number }, { seconds: number; m
         if (minutes === 0 && hours === 0 && days === 0) {
           clearInterval(this.myInterval);
         }
-        // reverse order 
+        // reverse order
         else if (hours === 0 && minutes === 0 && seconds === 0) {
           this.setState(({ days }) => ({
             days: days - 1,
@@ -39,22 +39,20 @@ export default class Timer extends Component<{ p: number }, { seconds: number; m
             minutes: 59,
             seconds: 59,
           }));
-        }  
-        else if (minutes === 0 && seconds === 0 ) {
+        } else if (minutes === 0 && seconds === 0) {
           this.setState(({ hours }) => ({
-            hours: (hours - 1) >= 0 ? (hours - 1) : 23,
-            days: (hours - 1) < 0 ? (days - 1) : days,
+            hours: hours - 1 >= 0 ? hours - 1 : 23,
+            days: hours - 1 < 0 ? days - 1 : days,
             minutes: 59,
             seconds: 59,
           }));
-        }
-        else if (seconds === 0) {
+        } else if (seconds === 0) {
           this.setState(({ minutes }) => ({
-            minutes: (minutes - 1) >= 0 ? (minutes - 1) : 59,
-            hours: (minutes - 1) < 0 ? (hours - 1) : hours,
+            minutes: minutes - 1 >= 0 ? minutes - 1 : 59,
+            hours: minutes - 1 < 0 ? hours - 1 : hours,
             seconds: 59,
           }));
-        } 
+        }
       }
     }, 1000);
   }
@@ -68,23 +66,23 @@ export default class Timer extends Component<{ p: number }, { seconds: number; m
     const hasEnded = days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0;
     let Tcolor: string | undefined;
     if (!hasEnded) {
-      Tcolor = (minutes < 10 && hours === 0 && days === 0) ? 'danger' : 'info';
+      Tcolor = minutes < 10 && hours === 0 && days === 0 ? 'danger' : 'info';
     }
 
     const hourglass = () => {
-      if (minutes > 30 ) { 
-       return <i className="fad fa-hourglass-start" /> // more than 30 minutes = ok? 
+      if (minutes > 30) {
+        return <i className="fad fa-hourglass-start" />; // more than 30 minutes = ok?
       }
-      if (minutes <= 30 && hours >= 1) { 
-       return <i className="fad fa-hourglass-start" /> // less than 30 min, but more than 1 hour, = ok
+      if (minutes <= 30 && hours >= 1) {
+        return <i className="fad fa-hourglass-start" />; // less than 30 min, but more than 1 hour, = ok
       }
-      if (minutes < 30 && hours <= 0 && days === 0) { 
-        return <i className="fad fa-hourglass-half" /> // less than 30 minutes
+      if (minutes < 30 && hours <= 0 && days === 0) {
+        return <i className="fad fa-hourglass-half" />; // less than 30 minutes
       }
-      if (minutes <= 10 && hours <= 0 && days <= 0) { 
-        return <i className="fad fa-hourglass-end" />
+      if (minutes <= 10 && hours <= 0 && days <= 0) {
+        return <i className="fad fa-hourglass-end" />;
       }
-      return <i className="fad fa-hourglass-start" />
+      return <i className="fad fa-hourglass-start" />;
     };
 
     return (

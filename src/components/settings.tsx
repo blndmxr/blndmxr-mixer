@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter, FormGroup, Form, Label, Input, Col, InputGroup, InputGroupAddon } from 'reactstrap';
 import { wallet } from '../state/wallet';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 export default function Settings() {
   const [Setting1, setSetting1] = useState(false);
@@ -142,12 +142,11 @@ export default function Settings() {
   return (
     <React.Fragment>
       <div>
-        <ToastContainer />
         <h5>Settings</h5>
         <div className="inner-container">
           <p>
-            Within blindmixer, there are a number of settings you can change. <br /> <br /> For example, if your current wallet does not support sending to native
-            segwit (these start with bc1...) you can also use nested segwit! (these start with 3...){' '}
+            Within {GLOBALS.WALLET_NAME}, there are a number of settings you can change. <br /> <br /> For example, if your current wallet does not support
+            sending to native segwit (these start with bc1...) you can also use nested segwit! (these start with 3...){' '}
           </p>
           <small>
             we do recommend you use the default native segwit addresses as it greatly reduces fees for both parties!{' '}
@@ -226,8 +225,8 @@ export default function Settings() {
                 <Input id="setting6" type="checkbox" onChange={updateSix} checked={Setting6} /> Enable 0-Conf Hookins against a small fee.
                 <p>
                   <b>Note:</b> This will enable 0-conf hookins. The custodian you are using might have several constraints on this such as only accepting
-                  non-RBF transactions, transactions with a certain fee, and up to a certain amount. Custodians may charge an additional hookin fee that differs from the
-                  standard fees to prevent cheating attempts.
+                  non-RBF transactions, transactions with a certain fee, and up to a certain amount. Custodians may charge an additional hookin fee that differs
+                  from the standard fees to prevent cheating attempts.
                 </p>
               </Label>
               <br />

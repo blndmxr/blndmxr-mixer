@@ -18,7 +18,7 @@ interface AddressInfoTx {
   }>;
   fee: number;
   weight: number;
-  status: { confirmed: boolean; block_height: number | null, block_time: number | null };
+  status: { confirmed: boolean; block_height: number | null; block_time: number | null };
 }
 
 export default async function (address: string): Promise<BitcoinReceiveInfo[]> {

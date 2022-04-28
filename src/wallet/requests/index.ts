@@ -13,8 +13,8 @@ export async function getStatusesByClaimable(config: Config, claimableHash: stri
   const statusPOD = await makeRequest<hi.POD.Status[]>(url);
 
   if (statusPOD instanceof RequestError) {
-    toast.error(`got request error: ${statusPOD.message}`);
-    throw statusPOD;
+    //toast.error(`got request error: ${statusPOD.message}`);
+    throw statusPOD.message;
   }
 
   if (!Array.isArray(statusPOD)) {
@@ -25,25 +25,29 @@ export async function getStatusesByClaimable(config: Config, claimableHash: stri
 }
 
 export async function addClaimable(config: Config, claimable: hi.Claimable): Promise<hi.Acknowledged.Claimable | Error> {
+  // error can only be something with fromPOD
   const resp = await makeRequest<string>(config.custodianUrl + '/add-claimable', hi.claimableToPOD(claimable));
 
   if (resp instanceof RequestError) {
     console.error('got request error: ', resp);
-    toast.error(`got request error: ${resp.message}`);
-    return new Error('could not make request against server: ' + resp.message + ' : ' + resp.statusCode);
+    throw resp.message; // needs to throw unfortunately for toaster
+
+    // toast.error(`got request error: ${resp.message}`);
+    //	return new Error("could not make request against server: " + resp.message + " : " + resp.statusCode);
   }
 
   return hi.Acknowledged.claimableFromPOD(resp);
 }
 
-export async function getLightningInfo(config: Config) {
+export async function getLightningInfo(config: Config): Promise<Docs.LND> {
   const url = `${config.custodianUrl}/inbound-outbound-capacity-lightning/`;
   const resp = await makeRequest<Docs.LND>(url);
 
   if (resp instanceof RequestError) {
     console.error('got request error: ', resp);
-    toast.error(`got request error: ${resp.message}`);
-    return new Error('could not make request against server: ' + resp.message + ' : ' + resp.statusCode);
+    throw resp.message;
+    //toast.error(`got request error: ${resp.message}`);
+    //return new Error("could not make request against server: " + resp.message + " : " + resp.statusCode);
   }
-  return resp;
+  return resp; // what if it is not doc?
 }

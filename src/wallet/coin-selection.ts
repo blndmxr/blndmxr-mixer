@@ -6,7 +6,7 @@ interface Coin {
   period: number;
 }
 
-type FindResult<T> = { found: T[]; excess: number, decay: number };
+type FindResult<T> = { found: T[]; excess: number; decay: number };
 
 // we should shuffle based on oldest coins first, TODO
 export function findAtLeast<T extends Coin>(coins: T[], target: number): FindResult<T> | number | undefined {
@@ -23,27 +23,27 @@ export function findAtLeast<T extends Coin>(coins: T[], target: number): FindRes
   let decay = 0;
 
   for (const [i, coin] of candidates.entries()) {
-    let multiplier = ((wallet.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100)
+    let multiplier = (wallet.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100;
 
-    if (multiplier > 1) { 
+    if (multiplier > 1) {
       multiplier = 1;
-    } else if (multiplier < 0) { 
+    } else if (multiplier < 0) {
       multiplier = 0;
     }
 
-    decay += Math.round(((2 ** coin.magnitude) * multiplier));
+    decay += Math.round(2 ** coin.magnitude * multiplier);
     amount += 2 ** coin.magnitude;
 
-    if ((amount) >= (target + decay)) {
+    if (amount >= target + decay) {
       return {
         found: candidates.slice(0, i + 1),
         excess: amount - target - decay,
-        decay
+        decay,
       };
     }
   }
-  if (amount < (target + decay)) {
-    return (target + decay) - amount;
+  if (amount < target + decay) {
+    return target + decay - amount;
   }
   return undefined;
 }

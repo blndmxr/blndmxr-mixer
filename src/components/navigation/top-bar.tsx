@@ -7,29 +7,26 @@ import SyncBtn from './sync-btn';
 
 export default withRouter(TopBar);
 
-// low priority
-const TestnetAlert = (isMobile: boolean) => {
-  const [visible, setVisible] = useState(localStorage.getItem(`dismissedTestnetAlert-${wallet.db.name}`) ? false : true);
+// Users should just be aware of this themselves.
+// const TestnetAlert = (isMobile: boolean) => {
+//   const [visible, setVisible] = useState(localStorage.getItem(`dismissedTestnetAlert-${wallet.db.name}`) ? false : true);
 
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+//   const [tooltipOpen, setTooltipOpen] = useState(false);
 
-  const toggle = () => setTooltipOpen(!tooltipOpen);
+//   const toggle = () => setTooltipOpen(!tooltipOpen);
 
-  const onDismiss = () => {setVisible(false), localStorage.setItem(`dismissedTestnetAlert-${wallet.db.name}`, 'true')};
+//   const onDismiss = () => {setVisible(false), localStorage.setItem(`dismissedTestnetAlert-${wallet.db.name}`, 'true')};
 
-  return (
-    <div>
-     {isMobile ? <Button color="light" id="t_"> <i className='fa fa-info-circle'/> Warning!</Button> : <Alert color="warning"  isOpen={visible} toggle={onDismiss} style={{width: 'max-content'}}>
-     <i className='fa fa-info-circle'/> Warning! This is a <a href="https://en.bitcoin.it/wiki/Testnet">testnet</a> wallet! 
-    </Alert>} 
-      {isMobile && <Tooltip placement="bottom" isOpen={tooltipOpen} target="t_" toggle={toggle}>
-      This is a <a href="https://en.bitcoin.it/wiki/Testnet">testnet</a> wallet!</Tooltip>}
-      </div>
-  ) ;
-}
-
-
-
+//   return (
+//     <div>
+//      {isMobile ? <Button color="light" id="t_"> <i className='fa fa-info-circle'/> Warning!</Button> : <Alert color="warning"  isOpen={visible} toggle={onDismiss} style={{width: 'max-content'}}>
+//      <i className='fa fa-info-circle'/> Warning! This is a <a href="https://en.bitcoin.it/wiki/Testnet">testnet</a> wallet!
+//     </Alert>}
+//       {isMobile && <Tooltip placement="bottom" isOpen={tooltipOpen} target="t_" toggle={toggle}>
+//       This is a <a href="https://en.bitcoin.it/wiki/Testnet">testnet</a> wallet!</Tooltip>}
+//       </div>
+//   ) ;
+// }
 
 function TopBar(props: RouteComponentProps & { isMobile: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +37,6 @@ function TopBar(props: RouteComponentProps & { isMobile: boolean }) {
   );
 
   const balance = useBalance();
-  let location = useLocation();
   // let timeDifference: number | undefined;
   // if (wallet.config.custodian.wipeDate) {
   //   timeDifference = +new Date(wallet.config.custodian.wipeDate) - +new Date();
@@ -64,7 +60,7 @@ function TopBar(props: RouteComponentProps & { isMobile: boolean }) {
       <Navbar light>
         {props.isMobile ? (
           <Link className="navbar-brand" to="/">
-            blindmixer
+            {GLOBALS.WALLET_NAME}
           </Link>
         ) : (
           ''
@@ -72,7 +68,7 @@ function TopBar(props: RouteComponentProps & { isMobile: boolean }) {
         {/* TODO make warning class  */}
         <span className="wallet-info">
           {/* {warning} */}
-           {' '} {wallet.config.custodian.currency === 'tBTC' ? TestnetAlert(props.isMobile) : undefined}
+          {/* {' '} {wallet.config.custodian.currency === 'tBTC' ? TestnetAlert(props.isMobile) : undefined} */}
           <b style={{ fontWeight: 'bold' }}>{props.isMobile ? '' : wallet.db.name} </b> {balance + ' sat'}
         </span>
         <div className="nav-item-right">

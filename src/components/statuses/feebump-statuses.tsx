@@ -10,7 +10,6 @@ import { Link } from 'react-router-dom';
 import fetchTxReceives from '../../wallet/requests/bitcoin-txs';
 import { RequestError } from '../../wallet/requests/make-request';
 import Failed from 'blindmixer-lib/dist/status/failed';
-import { ToastContainer } from 'react-toastify';
 
 type FeeBumpProps = {
   created: Date;
@@ -21,13 +20,13 @@ type FeeBumpProps = {
 let blockD: string = '';
 
 export default function FeeBumpStatuses(props: FeeBumpProps) {
-  const [CurrentTxid, setCurrentTxid] = useState('');
+  const [currentTxid, setCurrentTxid] = useState('');
   const claimable = props.claimable.toPOD();
   const statuses = useClaimableStatuses(props.claimableHash);
   const [IsConfirmed, hasConfirmed] = useState(true); // prevent false positives when loading
-  const [Loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  if (!Loading) {
+  if (!loading) {
     blockD = '';
   }
 
@@ -51,7 +50,7 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
           if (s instanceof BitcoinTransactionSent) {
             // setCurrentTxid(mp.Buffutils.toHex(s.txid));
             const txid = mp.Buffutils.toHex(s.txid);
-            if (!(blockD === txid)) {
+            if (blockD !== txid) {
               blockD = txid;
               await getConfirmationStatus(txid);
             }
@@ -60,8 +59,8 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
 
         if (props.claimable instanceof mp.Acknowledged.default) {
           if (!statuses.some((status) => status instanceof BitcoinTransactionSent) && !statuses.some((status) => status instanceof Failed)) {
-            if (!Loading) {
-              setLoading(!Loading);
+            if (!loading) {
+              setLoading(!loading);
               await wallet.requestStatuses(props.claimableHash);
             }
           }
@@ -130,11 +129,11 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
     return <span>Loading Statuses...</span>;
   };
 
-  const txid = wallet.config.custodian.currency === 'tBTC' ? `https://blockstream.info/testnet/tx/${CurrentTxid}` : `https://blockstream.info/tx/${CurrentTxid}`
+  const txidLink =
+    wallet.config.custodian.currency === 'tBTC' ? `https://blockstream.info/testnet/tx/${currentTxid}` : `https://blockstream.info/tx/${currentTxid}`;
 
   return (
     <div>
-      <ToastContainer />
       <h5>
         <i className="fad fa-history" /> feebump
       </h5>
@@ -160,11 +159,11 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
             <div className="claimable-text-container">
-              <a href={txid} target="_blank" rel="noreferrer">
+              <a href={txidLink} target="_blank" rel="noreferrer">
                 {' '}
-                {CurrentTxid}
+                {currentTxid}
               </a>
-              <CopyToClipboard className="btn btn-light" style={{}} text={CurrentTxid}>
+              <CopyToClipboard className="btn btn-light" style={{}} text={currentTxid}>
                 <i className="fa fa-copy" />
               </CopyToClipboard>
             </div>
@@ -188,9 +187,7 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
             <p className="address-title">Decay: </p>
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
-            <div className="claimable-text-container">
-              {`${claimable.decay} sat`}
-            </div>
+            <div className="claimable-text-container">{`${claimable.decay} sat`}</div>
           </Col>
         </Row>
         <Row>
@@ -202,7 +199,7 @@ export default function FeeBumpStatuses(props: FeeBumpProps) {
           </Col>
         </Row>
         {!IsConfirmed ? (
-          <Link to={{ pathname: '/feebump-send', state: { txid: { CurrentTxid } } }}>
+          <Link to={{ pathname: '/feebump-send', state: { currentTxid } }}>
             <button className="btn btn-secondary">Feebump this transaction!</button>
           </Link>
         ) : undefined}

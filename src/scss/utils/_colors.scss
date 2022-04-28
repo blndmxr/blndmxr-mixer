@@ -1,5 +1,5 @@
-$theme-blue: #3d91f9;
-$bg: #f4f6f8;
+$theme-blue: $primary-color;
+$bg: $background;
 $light-gray: #c8d6e5;
 $lighter-gray: #f8f9fa;
 $table-border: #dee2e6;
@@ -9,6 +9,6 @@ $neon-blue: #18dcff;
 $wintergreen: #32ff7e;
 $bright-red: #fc427b;
 $honey-yellow: #eab543;
-$body-text: #434d57;
+$body-text: $text-color;
 $white: #fff;
-$text-secondary: #6c757d;
+$text-secondary: $text-color-secondary;

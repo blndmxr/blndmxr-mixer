@@ -34,8 +34,8 @@ export default async function makeClaim(config: Config, claimant: hi.PrivateKey,
         continue;
       }
 
-      if (claimResp.message === 'WRONG_KEYS') { 
-        toast.error("Please reload your wallet and try again! Missing newest signing keys!");
+      if (claimResp.message === 'WRONG_KEYS') {
+        toast.error('Please reload your wallet and try again! Missing newest signing keys!');
         throw new Error('Invalid keys, expected a different signing period that we are locally on, please calculate yourself if this is correct!');
       }
 

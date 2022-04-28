@@ -27,7 +27,6 @@ export default function BitcoinAddressInfo(props: RouteComponentProps<{ address:
 function RenderAddress({ address: addressDoc }: { address: Docs.BitcoinAddress }) {
   const hookins = useHookinsOfAddress(addressDoc.address) || [];
 
-  // color="primary"
   return (
     <div>
       <h1>{addressDoc.address}</h1>

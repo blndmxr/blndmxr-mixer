@@ -32,6 +32,7 @@ import BitcoinTransactionSent from 'blindmixer-lib/dist/status/bitcoin-transacti
 import InvoiceSettled from 'blindmixer-lib/dist/status/invoice-settled';
 import Failed from 'blindmixer-lib/dist/status/failed';
 import LightningPaymentSent from 'blindmixer-lib/dist/status/lightning-payment-sent';
+import { toast } from 'react-toastify';
 
 let currentVersion = 4;
 // TODO: Improve this, placeholder.
@@ -101,8 +102,8 @@ export default class Database extends EventEmitter {
     return value;
   }
 
-  private async deleteCounter<S extends StoreName>(key: string, transaction: idb.IDBPTransaction<Schema, (S | 'counters')[]>) { 
-    await transaction.objectStore('counters').delete(key)
+  private async deleteCounter<S extends StoreName>(key: string, transaction: idb.IDBPTransaction<Schema, (S | 'counters')[]>) {
+    await transaction.objectStore('counters').delete(key);
   }
 
   private async nextCounter<S extends StoreName, Stringable extends { toPOD(): string }>(
@@ -253,7 +254,7 @@ export default class Database extends EventEmitter {
       const existenceProof = hi.unblind(unblinder, blindedExistenceProof);
       util.mustEqual(existenceProof.verify(newOwner.buffer, signer), true);
 
-      const coin = new hi.Coin(newOwner, coinClaim.magnitude, existenceProof, coinPeriod); // length 1, index 0 = period 1 
+      const coin = new hi.Coin(newOwner, coinClaim.magnitude, existenceProof, coinPeriod); // length 1, index 0 = period 1
       coinStore.put({
         claimableHash: claimableHash.toPOD(),
         blindingNonce: coinClaim.blindingNonce.toPOD(),
@@ -363,19 +364,49 @@ export default class Database extends EventEmitter {
       //   toast.error(`${claimResponse.toPOD().hash} is invalid!`)
       //   throw new Error(`${claimResponse.toPOD().hash} is invalid!`)
       // }
-
+      toast.success('New Claim Accepted!');
       await this.processStatuses([claimResponse], true);
       break;
     }
   }
 
   public async requestStatuses(claimableHash: string) {
-    const statuses = await requests.getStatusesByClaimable(this.config, claimableHash);
+    // we can toastify this but this is not constant timed, so will always have near instant response by custodian?
+    const statuses = await toast.promise(requests.getStatusesByClaimable(this.config, claimableHash), {
+      pending: 'Receiving New Statuses',
+      success: {
+        render() {
+          return 'Statuses up-to-date!'; // this is neutral, could be good or bad
+        },
+        type: 'info',
+      },
+      error: {
+        render({ data }) {
+          return `Oops! Invalid Response! ${data}`;
+        },
+      },
+    });
+
     await this.processStatuses(statuses);
   }
 
   public async requestLightningInfo() {
-    const resp = await requests.getLightningInfo(this.config);
+    // same for this
+    const resp = await toast.promise(requests.getLightningInfo(this.config), {
+      pending: 'Receiving Lightning Info...',
+      success: {
+        render() {
+          return 'Lightning Data received!'; // this is neutral, could be good or bad
+        },
+        type: 'info',
+      },
+      error: {
+        render({ data }) {
+          return `Oops! Invalid Reponse! ${data}`;
+        },
+      },
+    });
+
     if (resp instanceof Error) {
       throw resp;
     }
@@ -406,6 +437,7 @@ export default class Database extends EventEmitter {
         throw new Error(`${status.toPOD().hash} does not verify!`);
       }
 
+      toast.success('New Status found!');
       // TODO, do this in processClaimResponse, this is just unnecessarily complicated?!
       if (status instanceof hi.Acknowledged.default) {
         if (status.contents instanceof Claimed) {
@@ -437,9 +469,9 @@ export default class Database extends EventEmitter {
             throw new Error('Custodian is trying to cheat us by not sending requested amount of receipts back.');
           }
 
-          if (isNew) { 
-            if (coinPeriod != this.config.custodian.blindCoinKeys.length) { 
-              throw new Error('Custodian is trying to cheat us by signing for an older period, thus increasing the decay (?)')
+          if (isNew) {
+            if (coinPeriod != this.config.custodian.blindCoinKeys.length) {
+              throw new Error('Custodian is trying to cheat us by signing for an older period, thus increasing the decay (?)');
             }
           }
 
@@ -452,7 +484,9 @@ export default class Database extends EventEmitter {
             const isEqual = blindedReceipt.verify(originalClaim.blindingNonce, originalClaim.blindedOwner.c, signee[originalClaim.magnitude.n]);
             if (!isEqual) {
               throw new Error(
-                `Custodian is trying to feed us invalid coins! ${blindedReceipt.toPOD()}, ${originalClaim.blindedOwner.toPOD()}, ${signee[originalClaim.magnitude.n].toPOD()}`
+                `Custodian is trying to feed us invalid coins! ${blindedReceipt.toPOD()}, ${originalClaim.blindedOwner.toPOD()}, ${signee[
+                  originalClaim.magnitude.n
+                ].toPOD()}`
               );
             }
           }
@@ -486,16 +520,16 @@ export default class Database extends EventEmitter {
     try {
       invoice = await genInvoice(this.config, claimant, memo, amount);
     } catch (error) {
-      invoice = error
+      invoice = error;
     }
 
     // delete counter TODO?
     if (invoice instanceof Error) {
       const transactionC = this.db.transaction(['counters'], 'readwrite');
       //transactionC.objectStore('counters').delete(claimant.toPOD())
-      await this.deleteCounter(claimant.toPOD(), transactionC)
+      await this.deleteCounter(claimant.toPOD(), transactionC);
 
-      throw invoice
+      throw invoice;
     }
 
     const invoiceDoc = {
@@ -569,16 +603,16 @@ export default class Database extends EventEmitter {
     const coins = await this.listUnspent();
     let sum = 0;
     for (const coin of coins) {
-    let multiplier = ((this.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100)
-    
-    if (multiplier > 1) { 
-      multiplier = 1;
-    } else if (multiplier < 0) { 
-      multiplier = 0;
-    }
-    const decay = Math.round(((2 ** coin.magnitude) * multiplier));
+      let multiplier = (this.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100;
 
-    sum += ((2 ** coin.magnitude) - decay);
+      if (multiplier > 1) {
+        multiplier = 1;
+      } else if (multiplier < 0) {
+        multiplier = 0;
+      }
+      const decay = Math.round(2 ** coin.magnitude * multiplier);
+
+      sum += 2 ** coin.magnitude - decay;
     }
     return sum;
   }
@@ -592,17 +626,17 @@ export default class Database extends EventEmitter {
 
     let sum = 0;
     for (const coin of candidates) {
-      let multiplier = ((this.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100)
+      let multiplier = (this.config.custodian.blindCoinKeys.length - 1 - coin.period) / 100;
 
-      if (multiplier > 1) { 
+      if (multiplier > 1) {
         multiplier = 1;
-      } else if (multiplier < 0) { 
+      } else if (multiplier < 0) {
         multiplier = 0;
-      } 
+      }
 
-      const decay = Math.round(((2 ** coin.magnitude) * multiplier));
-  
-      sum += ((2 ** coin.magnitude) - decay);
+      const decay = Math.round(2 ** coin.magnitude * multiplier);
+
+      sum += 2 ** coin.magnitude - decay;
     }
     return sum;
   }
@@ -866,10 +900,28 @@ export default class Database extends EventEmitter {
 
   // sync without workers, this is the sane default.
   async sync() {
-    await this.syncBitcoinAddresses();
-    await this.syncLightningInvoices();
-    await this.syncClaimable();
-    await this.syncNested();
+    await toast.promise(this.syncBitcoinAddresses(), {
+      pending: 'Syncing Bitcoin Addresses',
+      success: 'Bitcoin Addresses Synced!',
+      error: 'Unable to Sync Bitcoin Addresses!',
+    });
+
+    await toast.promise(this.syncLightningInvoices(), {
+      pending: 'Syncing Lightning Invoices',
+      success: 'Lightning Invoices Synced!',
+      error: 'Unable to Sync Lightning Invoices!',
+    });
+
+    await toast.promise(this.syncClaimable(), {
+      pending: 'Syncing Claimables',
+      success: 'Claimables Synced!',
+      error: 'Unable to Sync Claimables!',
+    });
+    await toast.promise(this.syncNested(), {
+      pending: 'Syncing Nested Claimables',
+      success: 'Nested Claimables Synced!',
+      error: 'Unable to Sync Nested Claimables!',
+    });
   }
 
   // async syncHookins() {
@@ -1001,13 +1053,13 @@ export default class Database extends EventEmitter {
       let hookin = new hi.Hookin(receive.txid, receive.vout, receive.amount, claimant, bitcoinAddressDoc.address);
 
       // get ~ time of broadcast from blockstream -- custodian rpc also only offers blocktime
-      // stupid logic, because this gets replaced by acked claimable. 
+      // stupid logic, because this gets replaced by acked claimable.
       let time: Date = new Date();
 
-      if (receive.time) { 
-        if (receive.time < (new Date().getTime() / 1000)) { 
-          time = new Date(receive.time * 1000)
-        } 
+      if (receive.time) {
+        if (receive.time < new Date().getTime() / 1000) {
+          time = new Date(receive.time * 1000);
+        }
       }
       let hookinDoc = await transaction.objectStore('claimables').get(hookin.hash().toPOD());
 
@@ -1017,6 +1069,7 @@ export default class Database extends EventEmitter {
           created: time,
         };
         await transaction.objectStore('claimables').add(hookinDoc);
+        toast.success('Deposit Found!');
         toEmit = true;
       }
 
@@ -1039,7 +1092,21 @@ export default class Database extends EventEmitter {
 
   // makes network req
   async acknowledgeClaimable(claimable: hi.Claimable): Promise<void> {
-    const ackd = await requests.addClaimable(this.config, claimable);
+    const ackd = await toast.promise(requests.addClaimable(this.config, claimable), {
+      pending: 'Receiving Data...',
+      success: {
+        render() {
+          return 'Response received!'; // this is kinda neutral..?
+        },
+        type: 'info',
+      },
+      error: {
+        render({ data }) {
+          return `Oops! Invalid Response! ${data}`;
+        },
+      },
+    });
+
     if (ackd instanceof Error) {
       throw ackd;
     }
@@ -1062,23 +1129,23 @@ export default class Database extends EventEmitter {
 
     const transaction = this.db.transaction(['claimables'], 'readwrite');
     // get claimable with (more) correct time
-    const c = await transaction.objectStore('claimables').get(ackPOD.hash)
+    const c = await transaction.objectStore('claimables').get(ackPOD.hash);
 
-    let time: Date = new Date(); 
-    if (c && ackPOD.initCreated) { 
-      if (c.created.getTime() < ackPOD.initCreated ) { 
-        time = c.created
-      } else if (c.created.getTime() > ackPOD.initCreated ) { // prevent new hookins from having false time on first sync 
-        time = new Date(ackPOD.initCreated)
+    let time: Date = new Date();
+    if (c && ackPOD.initCreated) {
+      if (c.created.getTime() < ackPOD.initCreated) {
+        time = c.created;
+      } else if (c.created.getTime() > ackPOD.initCreated) {
+        // prevent new hookins from having false time on first sync
+        time = new Date(ackPOD.initCreated);
       }
-    } else if (c && ackPOD.initCreated === undefined) { 
-      time = c.created
+    } else if (c && ackPOD.initCreated === undefined) {
+      time = c.created;
     }
-
 
     await this.db.put('claimables', {
       ...ackPOD,
-      created: time, 
+      created: time,
     });
     await this.emit('table:claimables');
 
@@ -1086,11 +1153,17 @@ export default class Database extends EventEmitter {
   }
 
   public async sendLightningPayment(paymentRequest: string, amount: number, fee: number) {
-    return this.sendAbstractTransfer((inputs: hi.Coin[], decay: number) => new hi.LightningPayment({ inputs, amount, fee, decay }, paymentRequest), amount + fee);
+    return this.sendAbstractTransfer(
+      (inputs: hi.Coin[], decay: number) => new hi.LightningPayment({ inputs, amount, fee, decay }, paymentRequest),
+      amount + fee
+    );
   }
 
   public async sendHookout(priority: 'CUSTOM' | 'IMMEDIATE' | 'FREE' | 'BATCH', bitcoinAddress: string, amount: number, fee: number, rbf: boolean) {
-    return this.sendAbstractTransfer((inputs: hi.Coin[], decay: number) => new hi.Hookout({ inputs, amount, fee, decay }, bitcoinAddress, priority, rbf), amount + fee);
+    return this.sendAbstractTransfer(
+      (inputs: hi.Coin[], decay: number) => new hi.Hookout({ inputs, amount, fee, decay }, bitcoinAddress, priority, rbf),
+      amount + fee
+    );
   }
 
   public async sendFeeBump(txid: Uint8Array, fee: number, amount: number, confTarget: number) {
@@ -1150,7 +1223,11 @@ export default class Database extends EventEmitter {
     const tweakPubkey = tweak.toPublicKey();
     // this has no function (yet?)
     if (this.config.custodian.fundingKey instanceof Array) {
-      return tweakPubkey.toMultisig(this.config.custodian.currency === 'BTC' ? false : true, this.config.custodian.fundingKey, this.config.custodian.fundingKey.length)
+      return tweakPubkey.toMultisig(
+        this.config.custodian.currency === 'BTC' ? false : true,
+        this.config.custodian.fundingKey,
+        this.config.custodian.fundingKey.length
+      );
     }
     const pubkey = this.config.custodian.fundingKey.tweak(tweakPubkey);
     const usesNested = this.settings.setting1_hasNested;

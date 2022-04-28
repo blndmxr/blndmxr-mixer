@@ -3,7 +3,7 @@ import WalletDatabase from '../../wallet/database';
 import { setWallet } from '../../state/wallet';
 import { Link } from 'react-router-dom';
 import { Button, FormGroup, Input, Col } from 'reactstrap';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import LeftPanel from './left-panel';
 
 import * as dbInfo from '../../wallet/database-info';
@@ -13,7 +13,6 @@ export default function SelectWallet(props: any & { isMobile: boolean }) {
   useEffect(() => {
     dbInfo.list().then((dbNames) => {
       setExistingDbs(dbNames);
-
       // ok, this is neat, but we trade off security for it to work. useful for dev
       if (dbNames.indexOf('autoload') !== -1) {
         loadWallet('autoload', '');
@@ -35,9 +34,9 @@ export default function SelectWallet(props: any & { isMobile: boolean }) {
 
   return (
     <div className="full-page-container">
+      <ToastContainer theme="colored" autoClose={5000} />
       <LeftPanel isMobile={props.isMobile} />
       <div className="full-page-right-side">
-        <ToastContainer />
         <h2 className="main-heading">Select Wallet</h2>
         <div className="select-wallet-table">
           {existingDbs.map((dbName) => (

@@ -44,9 +44,10 @@ $desktop-top-bar-height: 56px;
     width: 100%;
     height: 50px;
     display: flex;
-    align-items: center;
+    align-items: end;
     justify-content: center;
     font-size: smaller;
+    flex-grow: 1;
   }
   .App-footer a {
     color: darken($body-text, 25%);

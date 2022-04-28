@@ -12,18 +12,8 @@ import Claimed from 'blindmixer-lib/dist/status/claimed';
 import useUniqueId from '../../util/use-unique-id';
 import InvoiceSettled from 'blindmixer-lib/dist/status/invoice-settled';
 import Timer from '../../util/timer';
-import { ToastContainer } from 'react-toastify';
 
-type LightningInvoiceProps = {
-  paymentRequest: string;
-  // memo: string;
-  created: Date;
-  claimableHash: string;
-  claimable: mp.Acknowledged.Claimable;
-  // mp.Claimable & mp.Acknowledged.Claimable; // mp.Acknowledged.Claimable
-};
-
-export default function LightningInvoice(props: LightningInvoiceProps) {
+export default function LightningInvoice(props: LightningProps) {
   const amount = GetLightningPaymentRequestAmount(props.paymentRequest);
   const [infiniteAmount, setFiniteAmount] = useState(0);
   const statuses = useClaimableStatuses(props.claimableHash);
@@ -31,7 +21,7 @@ export default function LightningInvoice(props: LightningInvoiceProps) {
   // this is not that interesting, just placeholders. maybe we want to call the custodian for transfer hashes
   const [hasPreimage, setPreimage] = useState<string | undefined>(undefined);
   const pro = notError(mp.decodeBolt11(props.paymentRequest));
-  const [expired] = useState<boolean>(isExpired());
+  const [expired] = useState<boolean>(isExpired);
   const [Loading, setLoading] = useState<boolean>(false);
 
   let description;
@@ -40,16 +30,9 @@ export default function LightningInvoice(props: LightningInvoiceProps) {
       description = tag.data;
     }
   }
-  // refactor TODO
-  function isExpired() {
-    const pro = notError(mp.decodeBolt11(props.paymentRequest));
-    const currentTime = new Date().getTime();
-    const expiryTime = new Date(pro.timeExpireDateString).getTime();
-    if (currentTime >= expiryTime) {
-      return true;
-    } else {
-      return false;
-    }
+
+  function isExpired(): boolean {
+    return new Date().getTime() >= new Date(pro.timeExpireDateString).getTime();
   }
 
   useEffect(() => {
@@ -119,7 +102,6 @@ export default function LightningInvoice(props: LightningInvoiceProps) {
 
   return (
     <div>
-      <ToastContainer />
       <h5>
         <i className="far fa-bolt" /> Lightning Invoice
       </h5>

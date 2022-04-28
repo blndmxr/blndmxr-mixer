@@ -26,7 +26,7 @@ export function CustomTable({ columns, data }: any) {
   return (
     <>
       <InputGroup className="col-sm-3" style={{ marginBottom: 10 }}>
-        <Input value={globalFilter === undefined ? '' : globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder={'Search any'} />
+        <Input value={globalFilter === undefined ? '' : globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder={'Search'} />
         <InputGroupAddon addonType="append">
           <InputGroupText>
             <i className="fa fa-search" />

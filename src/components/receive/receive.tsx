@@ -3,9 +3,22 @@ import React from 'react';
 import { TheQr } from '@the-/ui-qr';
 import { Button, Row, Col, UncontrolledCollapse, InputGroup, Input } from 'reactstrap';
 import * as Docs from '../../wallet/docs';
-import { wallet, useUnusedBitcoinAddress } from '../../state/wallet';
+import { wallet, useUnusedBitcoinAddress, useHookinsOfAddress } from '../../state/wallet';
 import CopyToClipboard from '../../util/copy-to-clipboard';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
+import HookinsTable from '../tables/hookins-table';
+
+// this is getting a bit crazy - we now have /receive/ /addresses/ /hookins/ all displaying hookin-tables
+function RenderAddress({ address: addressDoc }: { address: Docs.BitcoinAddress }) {
+  const hookins = useHookinsOfAddress(addressDoc.address) || [];
+
+  return hookins.length >= 1 ? (
+    <div>
+      <hr />
+      <HookinsTable hookins={hookins} />
+    </div>
+  ) : null;
+}
 
 function show(addressDoc: Docs.BitcoinAddress) {
   let memo: string | undefined;
@@ -20,9 +33,15 @@ function show(addressDoc: Docs.BitcoinAddress) {
     }
   }
 
+  // duplicate function from  /bitcoin-address-info/
+  function check() {
+    const hasDeposit = wallet.checkBitcoinAddress(addressDoc);
+
+    hasDeposit.then((a) => !a && toast.info('No Deposits found!'));
+  }
+
   return (
     <div>
-      <ToastContainer />
       <h5 className="main-header">Receive</h5>
       <div className="inner-container">
         <div className="qr-code-wrapper">
@@ -63,23 +82,23 @@ function show(addressDoc: Docs.BitcoinAddress) {
                 </p>
               </div>
         )  } */}
-        <Button color="secondary" onClick={() => wallet.checkBitcoinAddress(addressDoc)}>
+        <Button color="secondary" onClick={check}>
           Check
         </Button>{' '}
         <Button color="secondary" id="addMemo">
-          Add local memo
+          Add memo
         </Button>
         <UncontrolledCollapse toggler="addMemo">
           <br />
           <Row>
             <Col sm={{ size: 2, offset: 0 }}>
-              <p className="address-title">Add local memo to deposit address:</p>
+              <p className="address-title">Add memo to deposit address:</p>
             </Col>
 
             <Col sm={{ size: 9, offset: 0 }}>
               <InputGroup>
                 <Input
-                  defaultValue={memo}
+                  defaultValue={memo ? memo : 'Memo'}
                   onChange={(e) => {
                     memo = e.target.value;
                   }}
@@ -94,6 +113,7 @@ function show(addressDoc: Docs.BitcoinAddress) {
             </Col>
           </Row>
         </UncontrolledCollapse>
+        <RenderAddress address={addressDoc} />
       </div>
     </div>
   );

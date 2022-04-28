@@ -11,19 +11,11 @@ import { notError } from '../../util';
 import Failed from 'blindmixer-lib/dist/status/failed';
 import LightningPaymentSent from 'blindmixer-lib/dist/status/lightning-payment-sent';
 import Claimed from 'blindmixer-lib/dist/status/claimed';
-import { ToastContainer } from 'react-toastify';
-type LightningInvoiceProps = {
-  paymentRequest: string;
-  memo: string;
-  created: Date;
-  claimableHash: string;
-  claimable: mp.LightningPayment & Partial<mp.Acknowledged.Claimable>; // reversed typing
-};
 
-export default function LightningPayment(props: LightningInvoiceProps) {
+export default function LightningPayment(props: LightningProps) {
   let amount = GetLightningPaymentRequestAmount(props.paymentRequest);
 
-  const claimable = props.claimable.toPOD();
+  const claimable = (props.claimable as mp.LightningPayment & Partial<mp.Acknowledged.Claimable>).toPOD();
   if (amount === ' ') {
     amount = claimable.amount;
   }
@@ -135,7 +127,6 @@ export default function LightningPayment(props: LightningInvoiceProps) {
 
   return (
     <div>
-      <ToastContainer />
       <h5>
         <i className="far fa-bolt" /> Lightning Payment!
       </h5>
@@ -233,9 +224,7 @@ export default function LightningPayment(props: LightningInvoiceProps) {
             <p className="address-title">Decay: </p>
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
-            <div className="claimable-text-container">
-              {`${claimable.decay} sat`}
-            </div>
+            <div className="claimable-text-container">{`${claimable.decay} sat`}</div>
           </Col>
         </Row>
         <Row>

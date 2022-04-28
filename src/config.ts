@@ -15,9 +15,6 @@ export const p2shp2wpkh = 32 * 4;
 export const p2wpkh = 31 * 4;
 export const p2wsh = 43 * 4;
 
-
-
-
 // this is equal to native segwit multisig v0, make a seperate const anyway to keep things clean(er)
 export const p2tr = 43 * 4;
 export const p2trTransactionWeight = 609;

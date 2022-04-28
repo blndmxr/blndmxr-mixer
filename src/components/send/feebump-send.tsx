@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as hi from 'blindmixer-lib';
 import { wallet, useBalance } from '../../state/wallet';
 import { Row, Button, Form, FormGroup, Label, Input, Col, InputGroup } from 'reactstrap';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import getFeeSchedule, { FeeScheduleResult, getDynamicFeeRate } from '../../wallet/requests/get-fee-schedule';
 import FetchTx, { AddressInfoTx } from '../../wallet/requests/bitcoin-txs';
 import { RouteComponentProps } from 'react-router-dom';
@@ -10,40 +10,29 @@ import { RequestError } from '../../wallet/requests/make-request';
 
 import fetchTxReceives from '../../wallet/requests/bitcoin-txs';
 
-// why is this nested.. TODO
-interface txid {
-  txid: {
-    CurrentTxid: string;
-  };
+interface ctx {
+  currentTxid: string | undefined;
 }
 
-export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): JSX.Element {
-  const [toText, setToText] = useState<undefined | string>(undefined);
+export default function FeebumpSend(props: RouteComponentProps<{}, any, ctx>): JSX.Element {
+  const [toText] = useState<undefined | string>(props.history.location.state ? props.history.location.state.currentTxid : undefined);
   const balance = useBalance();
-  const [fee, setFee] = useState<number | undefined>(undefined);
-  const [FailedFee, setFailedFee] = useState('');
-  const [fairShare, setFairShare] = useState('Loading...');
+  const [localCalculatedFee, setLocalCalculatedFee] = useState<number | string | undefined>(undefined);
+  const [confTarget, setConfTarget] = useState<string>('6'); // 6 is default immediate.
 
-  const [confTarget, setconfTarget] = useState('6'); // 6 is default immediate.
+  const [fetchedWeight, setFetchedWeight] = useState<number | undefined>(undefined);
 
-  useEffect(() => {
-    if (props.history.location.state != undefined) {
-      setToText(props.history.location.state.txid.CurrentTxid);
-    }
-  }, []);
   useEffect(() => {
     async function getResponse() {
       if (toText && confTarget) {
-        const fee = await calculateFee(await fetchTxReceives(toText));
-        if (typeof fee === 'number') {
-          setFee(fee);
-        } else {
-          setFailedFee(fee);
-          setFee(undefined); // clean up
-        }
+        setLocalCalculatedFee(await calculateFee(await fetchTxReceives(toText)));
       }
     }
-    getResponse();
+    toast.promise(getResponse(), {
+      pending: 'Fetching and calculating fees!',
+      success: 'Received new fees!',
+      error: 'Could not receive new fees!',
+    });
   }, [confTarget, toText]);
 
   // we should check bytes rather than inputs/outputs, but this'll do somewhat.
@@ -64,7 +53,7 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
       return `unable to fetch transaction ${Response.message}`;
     }
     if (!Number.isFinite(Number(confTarget)) || Number(confTarget) <= 0) {
-      toast.error('invalid blockTarget');
+      // toast.error("invalid blockTarget");
       return 'Not a valid confTarget';
     }
 
@@ -73,17 +62,11 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
     if (fees instanceof RequestError) {
       return fees.message;
     }
+    setFetchedWeight(weight);
 
-    if (status.confirmed === true) {
+    if (status.confirmed) {
       return 'Invalid TX | TXID already confirmed';
     }
-    // how much is disproportionate?
-    if (weight > 561 + 500) {
-      setFairShare('Please note: You will most likely pay a disproportionate amount of money for this feebump.');
-    } else {
-      setFairShare("It seems like this tx has a limited amount of inputs/outputs. You'll likely pay a fair share!");
-    }
-
     for (let index = 0; index < vin.length; index++) {
       const sequence = vin[index];
 
@@ -102,18 +85,13 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
     return Math.round(amount);
   }
 
-  function handleToTextChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setToText(event.target.value);
-    // reset fee, makes everything a bit cleaner
-    setFee(0);
-  }
-
-  async function send(): Promise<void> {
-    const amount = fee;
-    if (!amount) {
+  async function send() {
+    const amount = localCalculatedFee;
+    if (!amount || typeof amount == 'string') {
       toast.error('invalid amount');
       return;
     }
+
     if (!Number.isFinite(amount) || amount <= 0) {
       toast.error('invalid amount');
       return;
@@ -131,8 +109,10 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
       transferHash = await wallet.sendFeeBump(txid, 0, amount, Number(confTarget));
     }
 
+    // current intended behaviour: push user to failed claimable???! TODO
+
     if (typeof transferHash === 'string') {
-      toast.error('Oops! ' + transferHash);
+      //toast.error("Oops! " + transferHash);
       return;
     }
 
@@ -140,13 +120,24 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
   }
 
   function handleConfTargetChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setconfTarget(event.target.value);
+    setConfTarget(event.target.value);
+    // reset UI
+    setFetchedWeight(undefined);
+    setLocalCalculatedFee(undefined);
   }
   // const maxAmount = balance; // TODO: Reduce the tx fee
 
+  if (!toText) {
+    return (
+      <div>
+        <h5 className="main-header">Feebump!</h5>
+        <div className="inner-container">No txid found</div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <ToastContainer />
       <h5 className="main-header">Feebump!</h5>
       <div className="inner-container">
         <Form>
@@ -156,14 +147,14 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
             </Label>
             <Col sm={{ size: 9, offset: 0 }}>
               <InputGroup>
-                <Input value={toText == undefined ? '' : toText} onChange={handleToTextChange} type="text" className="to-text-input" required disabled />
+                <Input value={toText == undefined ? '' : toText} type="text" className="to-text-input" required disabled />
               </InputGroup>
             </Col>
           </FormGroup>
 
           {sendType.kind === 'error' ? <p>Error: {sendType.message}</p> : undefined}
           <p>
-            <b>Expected Fee:</b> {fee != undefined ? fee + ' sat' : FailedFee}
+            <b>Expected Fee:</b> {localCalculatedFee && typeof localCalculatedFee == 'number' ? localCalculatedFee + ' sat' : localCalculatedFee}
           </p>
           <FormGroup row className="bordered-form-group">
             <Label for="toText" sm={3}>
@@ -194,7 +185,13 @@ export default function FeebumpSend(props: RouteComponentProps<{}, any, txid>): 
               </Button>
             </Col>
           </FormGroup>
-          {fee !== undefined ? <Label>{fairShare}</Label> : undefined}
+          {localCalculatedFee && typeof localCalculatedFee == 'number' && fetchedWeight && (
+            <Label>
+              {fetchedWeight > 561 + 200
+                ? 'Please note: You will most likely pay a disproportionate amount of money for this feebump.'
+                : "It seems like this tx has a limited amount of inputs/outputs. You'll likely pay a fair share!"}
+            </Label>
+          )}
         </Form>
       </div>
     </div>

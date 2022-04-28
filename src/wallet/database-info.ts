@@ -28,14 +28,12 @@ async function open() {
   });
 }
 
-
 // does this catch properly?
-export async function tryIDB() { 
+export async function tryIDB() {
   try {
-    await idb.openDB<DbNamesSchema>('dbnames', 1)
-  }
-  catch (err) {
-    return false
+    await idb.openDB<DbNamesSchema>('dbnames', 1);
+  } catch (err) {
+    return false;
   }
 }
 

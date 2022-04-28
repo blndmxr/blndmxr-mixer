@@ -24,11 +24,13 @@ export default function History({ isMobile }: { isMobile: boolean }) {
           <TransactionItem key={c.hash} claimable={c} isMobile={isMobile} />
         ))}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <Button color="primary" onClick={() => setPage(page + 1)}>
-          Load More
-        </Button>
-      </div>
+      {claimables.length > 51 && (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <Button color="primary" onClick={() => setPage(page + 1)}>
+            Load More
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

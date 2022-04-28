@@ -3,12 +3,13 @@ import * as bip39 from '../../bip39';
 import WalletDatabase from '../../wallet/database';
 import { setWallet } from '../../state/wallet';
 import { Button, Form, FormGroup, Label, Input, Col, UncontrolledCollapse } from 'reactstrap';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
 import LeftPanel from './left-panel';
 import { Link } from 'react-router-dom';
 
-const defaultCustodian = 'https://mainnet.blindmixer.com/#pubmp1qv83cyx8m8acc4j86j6g5rdyd30g0rszh2ahed2g5gxemgnyzc69v8z0daw';
+// they can reverse-proxy if they want to/should?
+const defaultCustodian = `https://mainnet.blindmixer.com/#pubmp1qv83cyx8m8acc4j86j6g5rdyd30g0rszh2ahed2g5gxemgnyzc69v8z0daw`;
 
 export default function CreateWallet(props: any & { isMobile: boolean }) {
   const [walletName, setWalletName] = useState('main');
@@ -30,7 +31,7 @@ export default function CreateWallet(props: any & { isMobile: boolean }) {
   }
   return (
     <div className="full-page-container">
-      <ToastContainer />
+      <ToastContainer theme="colored" autoClose={5000} />
       <LeftPanel isMobile={props.isMobile} />
       <div className="full-page-right-side">
         <h3 className="main-heading">Create New Wallet</h3>
@@ -53,9 +54,8 @@ export default function CreateWallet(props: any & { isMobile: boolean }) {
               <Input value={custodianUrl} name="custodianUrl" onChange={(e) => setCustodianUrl(e.target.value)} list="default=custodian-urls" />
               {/* TODO: */}
               <datalist id="default=custodian-urls">
-              <option value="https://mainnet.blindmixer.com/#pubmp1qv83cyx8m8acc4j86j6g5rdyd30g0rszh2ahed2g5gxemgnyzc69v8z0daw"/>
-              <option value="https://testnet.blindmixer.com/#pubmp1qf98kxatpw43mqjft6j72dps5wn66yzp47k3zm0yn4skhedv32x5sphklj2"/>
-
+                <option value="https://mainnet.blindmixer.com/#pubmp1qv83cyx8m8acc4j86j6g5rdyd30g0rszh2ahed2g5gxemgnyzc69v8z0daw" />
+                <option value="https://testnet.blindmixer.com/#pubmp1qf98kxatpw43mqjft6j72dps5wn66yzp47k3zm0yn4skhedv32x5sphklj2" />
               </datalist>
             </Col>
             <UncontrolledCollapse toggler="#toggler">
@@ -78,10 +78,9 @@ export default function CreateWallet(props: any & { isMobile: boolean }) {
               </Button>
             </Col>
           </FormGroup>
-
         </Form>
         <p>
-          Already have a wallet? <Link to="/restore">Restore{' '}</Link>
+          Already have a wallet? <Link to="/restore">Restore </Link>
         </p>
       </div>
     </div>

@@ -5,7 +5,7 @@ const Desktop = () => {
   return (
     <div className="full-page-left-side">
       <h1 className="blindmixer">
-        <i className="fad fa-cauldron logo" /> blindmixer{' '}
+        <i className="fad fa-cauldron logo" /> {GLOBALS.WALLET_NAME}{' '}
       </h1>
 
       <h4>
@@ -23,7 +23,7 @@ const Mobile = () => {
       <h1 className="blindmixer">
         <i className="fad fa-cauldron logo" />{' '}
         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-          blindmixer{' '}
+          {GLOBALS.WALLET_NAME}{' '}
         </Link>
       </h1>
       <br />

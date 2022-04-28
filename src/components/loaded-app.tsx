@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 import BitcoinAddressInfo from './tables/bitcoin-address-info';
 import ReceiveBitcoin from './receive/receive';
-import { BrowserRouter, HashRouter, Route, Switch, RouteComponentProps, Redirect } from 'react-router-dom';
+import { BrowserRouter, HashRouter as Router, Route, Switch, RouteComponentProps, Redirect } from 'react-router-dom';
 
 import Send from './send/send';
 import Hookins from './tables/hookins';
@@ -27,7 +27,7 @@ import Faq from './faq';
 import Invoices from './tables/invoices';
 import Payments from './tables/payments';
 import { wallet } from '../state/wallet';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import makeRequest from '../wallet/requests/make-request';
 import getCustodianInfo from '../wallet/requests/get-custodian-info';
 import { CustodianInfo } from 'blindmixer-lib';
@@ -42,41 +42,39 @@ function NoMatch(params: RouteComponentProps<any>) {
   );
 }
 
-const Router: any = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
+//const Router: any = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
 
 export default function LoadedApp() {
   let windowSize = useWindowSize();
   // console.log('window size is: ', windowSize);
   let mobileView = windowSize.innerWidth < 576;
-  const Router: any = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
-  
+
   useEffect(() => {
-    (async () =>  {
+    (async () => {
       // automatically acked
       const custodian = await getCustodianInfo(`${wallet.config.custodianUrl}/#${wallet.config.custodian.acknowledgementKey.toPOD()}`);
       if (custodian instanceof Error || custodian instanceof CustodianInfo) {
-        toast.error("Can't fetch new custodian keys")
+        toast.error("Can't fetch new custodian keys");
         throw custodian;
       }
 
-      if (wallet.config.custodian.blindCoinKeys.length < custodian.ci.blindCoinKeys.length) { 
-        // check if our local copy matches custodians new old keys 
-        
+      if (wallet.config.custodian.blindCoinKeys.length < custodian.ci.blindCoinKeys.length) {
+        // check if our local copy matches custodians new old keys
+
         // this is easier?
         const localOldestFirst = [...wallet.config.custodian.blindCoinKeys].reverse(); // don't mutate
         const newOldestFirst = [...custodian.ci.blindCoinKeys].reverse();
-      
+
         for (let i = 0; i < wallet.config.custodian.blindCoinKeys.length; i++) {
           const localOldKeys = localOldestFirst[i];
           const newOldFetchedKeys = newOldestFirst[i];
           // check all individual keys
           for (let k = 0; k < localOldKeys.length; k++) {
-            
             const localOldKey = localOldKeys[k];
             const newOldKey = newOldFetchedKeys[k];
 
-            if (localOldKey.toPOD() != newOldKey.toPOD()) { 
-              toast.error('custodian fed invalid old keys')
+            if (localOldKey.toPOD() != newOldKey.toPOD()) {
+              toast.error('custodian fed invalid old keys');
               throw `custodian fed invalid/incorrect old keys ${localOldKey.toPOD()} while the custodian gives us ${newOldKey.toPOD()}`;
             }
           }
@@ -87,24 +85,19 @@ export default function LoadedApp() {
         if (!walletConfig) {
           return new Error('Invalid config?');
         }
-        walletConfig.custodian.blindCoinKeys = custodian.ci.blindCoinKeys.map(ck => (ck.map(c => c.toPOD())));
+        walletConfig.custodian.blindCoinKeys = custodian.ci.blindCoinKeys.map((ck) => ck.map((c) => c.toPOD()));
         walletConfig.sig = custodian.sigP.toPOD();
-        wallet.config.pubkey = custodian.ephemeral.toPOD();
+        walletConfig.pubkey = custodian.ephemeral.toPOD(); // didnt store the new key...
         wallet.db.put('config', walletConfig);
-        toast.success("Updated your signing keys!")
+        toast.success('Updated your signing keys!');
       }
     })();
 
     (async () => {
-      const response = await makeRequest(`${wallet.config.custodianUrl}/tor-check`) as boolean
-    
-      if (response === true) {
-        toast.success("It looks like you're using tor!");
-      } else {
-        toast.error("Are you sure you're using TOR? You might miss out on additional privacy.");
-      }
-    })();
+      const response = (await makeRequest(`${wallet.config.custodianUrl}/tor-check`)) as boolean;
 
+      response ? toast.success("It looks like you're using tor!") : toast.error("Are you sure you're using TOR? You might miss out on additional privacy.");
+    })();
   }, []);
 
   return (
@@ -113,7 +106,7 @@ export default function LoadedApp() {
         <TopBar isMobile={mobileView} />
         {!mobileView ? <Navbar isMobile={mobileView} /> : ''}
         <div className="main-container">
-        <ToastContainer/>
+          <ToastContainer theme="colored" autoClose={5000} />
           <Switch>
             <Route path="/create-wallet" exact render={() => <Redirect to="/" />} />
             <Route path="/" exact component={() => <Transactions isMobile={mobileView} />} />

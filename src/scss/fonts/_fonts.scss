@@ -1,16 +1,21 @@
-@import url('https://fonts.googleapis.com/css?family=Nunito:400,600,700,800,900&display=swap');
+//@import url('https://fonts.googleapis.com/css?family=Nunito:400,600,700,800,900&display=swap');
+
+$nunito-font-path: '../../public/Nunito' !default;
 
 @font-face {
-  font-family: 'Nunito Bold';
-  src: url('/fonts/Nunito/Nunito-Bold.ttf') format('truetype');
+  font-family: 'Nunito';
+  src: url('#{$nunito-font-path}/Nunito-Bold.ttf') format('truetype');
   font-weight: bold;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Nunito';
-  src: url('./fonts/Nunito/Nunito-Regular.ttf') format('truetype');
+  src: url('#{$nunito-font-path}/Nunito-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+}
 
-  font-weight: normal;
-  font-style: normal;
+@font-face {
+  font-family: 'Nunito';
+  src: url('#{$nunito-font-path}/Nunito-Regular.ttf') format('truetype');
 }

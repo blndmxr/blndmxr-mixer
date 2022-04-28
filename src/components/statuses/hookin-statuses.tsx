@@ -6,7 +6,6 @@ import * as mp from 'blindmixer-lib';
 import { useClaimableStatuses, wallet } from '../../state/wallet';
 import Claimed from 'blindmixer-lib/dist/status/claimed';
 import HookinAccepted from 'blindmixer-lib/dist/status/hookin-accepted';
-import { ToastContainer } from 'react-toastify';
 
 type HookinProps = {
   created: Date;
@@ -15,14 +14,14 @@ type HookinProps = {
 };
 
 export default function HookinStatuses(props: HookinProps) {
-  const [CurrentConsolidationFee, setCurrentConsolidationFee] = useState(0);
-  const [CurrentFee, setCurrentFee] = useState(0); // we can merge this with consolidation fee, but might be nice for people to know the difference?
+  const [currentConsolidationFee, setCurrentConsolidationFee] = useState(0);
+  const [currentFee, setCurrentFee] = useState(0); // we can merge this with consolidation fee, but might be nice for people to know the difference?
 
   const claimable = props.claimable.toPOD();
   const statuses = useClaimableStatuses(props.claimableHash);
-  const [Memo, setMemo] = useState<undefined | string>(undefined);
+  const [memo, setMemo] = useState<undefined | string>(undefined);
   // should fix double claim for now
-  const [Loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const getData = async (): Promise<void> => {
@@ -40,8 +39,8 @@ export default function HookinStatuses(props: HookinProps) {
             await wallet.requestStatuses(props.claimableHash);
           } else {
             if (!statuses.some((status) => status instanceof Claimed)) {
-              if (!Loading) {
-                setLoading(!Loading);
+              if (!loading) {
+                setLoading(!loading);
                 await wallet.claimClaimable(props.claimable);
               }
             }
@@ -51,9 +50,9 @@ export default function HookinStatuses(props: HookinProps) {
         }
       }
     };
-    const memo = localStorage.getItem(claimable.bitcoinAddress);
-    if (memo != undefined) {
-      setMemo(memo);
+    const fetchedMemo = localStorage.getItem(claimable.bitcoinAddress);
+    if (fetchedMemo) {
+      setMemo(fetchedMemo);
     }
     getData();
   }, [claimable, statuses]); // I think not updating because it's unacked is only an issue with hookins..? invoice is always acked, OK, we could have a transfer edge-case where it's not acked at first (different feerate?!)
@@ -99,11 +98,11 @@ export default function HookinStatuses(props: HookinProps) {
     }
   };
 
-  const txid = wallet.config.custodian.currency === 'tBTC' ? `https://blockstream.info/testnet/tx/${claimable.txid}` : `https://blockstream.info/tx/${claimable.txid}`
+  const txid =
+    wallet.config.custodian.currency === 'tBTC' ? `https://blockstream.info/testnet/tx/${claimable.txid}` : `https://blockstream.info/tx/${claimable.txid}`;
 
   return (
     <div>
-      <ToastContainer />
       <h5>
         <i className="fad fa-arrow-from-top" /> Hookin
       </h5>
@@ -145,7 +144,7 @@ export default function HookinStatuses(props: HookinProps) {
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
             <div className="claimable-text-container">
-              {`${claimable.amount - CurrentFee} sat`}
+              {`${claimable.amount - currentFee} sat`}
               {/* <CopyToClipboard className="btn btn-light" style={{}} text={claimable.amount.toString()}>
                 <i className="fa fa-copy" />
               </CopyToClipboard> */}
@@ -158,7 +157,7 @@ export default function HookinStatuses(props: HookinProps) {
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
             <div className="claimable-text-container">
-              {`${CurrentConsolidationFee} sat`}
+              {`${currentConsolidationFee} sat`}
 
               {/* <CopyToClipboard className="btn btn-light" style={{}} text={CurrentConsolidationFee.toString()}>
                 <i className="fa fa-copy" />
@@ -173,7 +172,7 @@ export default function HookinStatuses(props: HookinProps) {
             </Col>
             <Col sm={{ size: 8, offset: 0 }}>
               <div className="claimable-text-container">
-                {`${CurrentFee} sat`}
+                {`${currentFee} sat`}
 
                 {/* <CopyToClipboard className="btn btn-light" style={{}} text={CurrentConsolidationFee.toString()}>
           <i className="fa fa-copy" />
@@ -182,13 +181,13 @@ export default function HookinStatuses(props: HookinProps) {
             </Col>
           </Row>
         ) : undefined}
-        {Memo != undefined ? (
+        {memo != undefined ? (
           <Row>
             <Col sm={{ size: 2, offset: 0 }}>
               <p className="address-title">Memo: </p>
             </Col>
             <Col sm={{ size: 8, offset: 0 }}>
-              <div className="claimable-text-container">{Memo}</div>
+              <div className="claimable-text-container">{memo}</div>
             </Col>
           </Row>
         ) : undefined}
@@ -200,7 +199,7 @@ export default function HookinStatuses(props: HookinProps) {
             <div className="claimable-text-container">{props.created.toString()}</div>
           </Col>
         </Row>
-        {claimable.amount < CurrentConsolidationFee != false ? (
+        {claimable.amount < currentConsolidationFee ? (
           <Row>
             <Col sm={{ size: 8, offset: 0 }}>
               <div className="claimable-text-container">

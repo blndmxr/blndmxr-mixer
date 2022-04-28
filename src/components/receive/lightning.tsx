@@ -5,6 +5,7 @@ import { wallet } from '../../state/wallet';
 import { Button, Col, Form, FormGroup, Input, InputGroup, Label } from 'reactstrap';
 import BitcoinAmountInput from '../../util/bitcoin-amount-input';
 import * as Docs from '../../wallet/docs';
+import { toast } from 'react-toastify';
 
 export default function ReceiveLightning(props: RouteComponentProps) {
   const [memo, setMemo] = useState('deposit');
@@ -24,7 +25,13 @@ export default function ReceiveLightning(props: RouteComponentProps) {
         console.warn('amount must be an integer >= 0');
         return;
       }
-    const res = await wallet.requestLightningInvoice(memo, amountInt);
+
+    // toast.promise here instead of database.ts for faster initiation of toast?
+    const res = await toast.promise(wallet.requestLightningInvoice(memo, amountInt), {
+      pending: 'Generating Invoice...',
+      success: 'Invoice Generated!',
+      error: 'Unable to Sync Nested Claimables!',
+    });
 
     props.history.push(`/claimables/${res.hash}`, res);
   }
@@ -61,7 +68,7 @@ export default function ReceiveLightning(props: RouteComponentProps) {
               use this invoice for internal transfers!
             </code>
           ) : undefined}
-                  {/* {wallet.config.custodian.wipeDate  && (new Date(wallet.config.custodian.wipeDate) < new Date(Date.now() + 48*60*60*1000)) && (
+          {/* {wallet.config.custodian.wipeDate  && (new Date(wallet.config.custodian.wipeDate) < new Date(Date.now() + 48*60*60*1000)) && (
                 <div className="text-container">
                 <p >
                   <span>

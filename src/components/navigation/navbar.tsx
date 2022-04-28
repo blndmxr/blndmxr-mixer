@@ -26,7 +26,7 @@ function NavBar(props: any) {
         <div>
           <Link to="/" className={pathname === '/' ? 'prev-non-active-nav navbar-brand' : 'navbar-brand'}>
             <i className="fad fa-cauldron logo" />
-            blindmixer
+            {GLOBALS.WALLET_NAME}
           </Link>
           <div />
         </div>

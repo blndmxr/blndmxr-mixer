@@ -3,7 +3,7 @@ import * as hi from 'blindmixer-lib';
 
 import { wallet, useBalance, useMaxSend } from '../../state/wallet';
 import { Row, Button, Form, FormGroup, Label, Input, Col, InputGroup } from 'reactstrap';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import getFeeSchedule, { FeeScheduleResult } from '../../wallet/requests/get-fee-schedule';
 import getEstimatedCustomFee, { BitcoinFees } from '../../wallet/requests/estimate-custom-fee';
 
@@ -21,16 +21,14 @@ interface PTMaddress {
   amount: number;
 }
 
-type Props = { history: { push: (path: string) => void } };
-export default function Send({ history }: Props) {
+export default function Send({ history }: HistoryPushProp) {
   const [IsDisabled, setIsDisabled] = useState(false);
 
   const [isRBF, setRBF] = useState(true);
   const updateRBF = () => setRBF(!isRBF);
   const feeSchedule = useFeeSchedule();
   const recommendedFees = useEstimateCustomFee();
-
-  const [LocalMemo, setLocalMemo] = useState<string | undefined>(undefined);
+  const [localMemo, setLocalMemo] = useState<string | undefined>(undefined);
 
   const [toText, setToText] = useState('');
 
@@ -74,7 +72,10 @@ export default function Send({ history }: Props) {
         let decodedBolt11 = hi.decodeBolt11(toText);
         if (!(decodedBolt11 instanceof Error)) {
           if (decodedBolt11.timeExpireDate * 1000 <= Date.now()) {
-            setSendType({ kind: 'error', message: `lightning invoice has already expired (${decodedBolt11.timeExpireDateString} )` });
+            setSendType({
+              kind: 'error',
+              message: `lightning invoice has already expired (${decodedBolt11.timeExpireDateString} )`,
+            });
           }
 
           setSendType({ kind: 'lightning', amount: decodedBolt11.satoshis || 0 });
@@ -146,12 +147,12 @@ export default function Send({ history }: Props) {
 
   // make this a hook?
   function calcFee(PTMaddress?: string): number {
-    if (sendType.kind === 'error') { 
-      return 0 
+    if (sendType.kind === 'error') {
+      return 0;
     }
-    if (sendType.kind === 'empty') { 
-      if (!PTMaddress) { 
-        return 0
+    if (sendType.kind === 'empty') {
+      if (!PTMaddress) {
+        return 0;
       }
     }
     if (sendType.kind === 'lightning') {
@@ -267,7 +268,7 @@ export default function Send({ history }: Props) {
       console.log('sending lightning payment: ', toText, amount, calcFee());
       transferHash = await wallet.sendLightningPayment(toText, amount, calcFee());
       if (typeof transferHash === 'string') {
-        toast.error('Oops! ' + transferHash);
+        //toast.error("Oops! " + transferHash);
         return;
       }
       history.push(`/claimables/${transferHash.toPOD()}`);
@@ -281,11 +282,11 @@ export default function Send({ history }: Props) {
     if (toText != '' && toPTM === '' && !toText.startsWith('ln') && !toText.startsWith('bitcoin:')) {
       transferHash = await wallet.sendHookout(prioritySelection, toText, amount, calcFee(), disableRBF());
       if (typeof transferHash === 'string') {
-        toast.error('Oops! ' + transferHash);
+        //toast.error("Oops! " + transferHash);
         return;
       }
-      if (LocalMemo) {
-        localStorage.setItem(transferHash.toPOD(), LocalMemo);
+      if (localMemo) {
+        localStorage.setItem(transferHash.toPOD(), localMemo);
       }
       history.push(`/claimables/${transferHash.toPOD()}`);
     }
@@ -315,8 +316,8 @@ export default function Send({ history }: Props) {
           toast.error('Oops! ' + transferHash);
           return;
         }
-        if (LocalMemo) {
-          localStorage.setItem(transferHash.toPOD(), LocalMemo);
+        if (localMemo) {
+          localStorage.setItem(transferHash.toPOD(), localMemo);
         }
         history.push(`/claimables/${transferHash.toPOD()}`);
       }
@@ -391,22 +392,27 @@ export default function Send({ history }: Props) {
   }
 
   // request against the custodian to get avg confirmation times?
-  const howLong = () => {
+  const CustomFeeInfo = () => {
     if (!recommendedFees) {
       return undefined;
     }
-    if (recommendedFees.fastestFee <= Number(feeText)) {
-      return `10 minutes, within 1 block. (recommended fee to get confirmed within 10 minutes is ${recommendedFees.fastestFee} sat/vbyte)`;
-    } else if (recommendedFees.halfHourFee <= Number(feeText)) {
-      return `half an hour, within 3 blocks. (recommended fees to get confirmed within half an hour are ${recommendedFees.halfHourFee} sat/vbyte)`;
-    } else if (recommendedFees.hourFee <= Number(feeText)) {
-      return `Within an hour, most likely around 6 blocks. (recommend fees to get confirmed within the hour are ${recommendedFees.hourFee} sat/vbyte)`;
+
+    let time;
+    if (Number(feeText) >= recommendedFees.fastestFee) {
+      time = { rec: recommendedFees.fastestFee, t: '10' };
+    } else if (Number(feeText) >= recommendedFees.halfHourFee) {
+      time = { rec: recommendedFees.halfHourFee, t: '30' };
+    } else if (Number(feeText) >= recommendedFees.hourFee) {
+      time = { rec: recommendedFees.hourFee, t: '60' };
     } else {
-      return `With this feerate it will take longer than an hour to get confirmed. Recommended fees to get confirmed within an hour are ${recommendedFees.hourFee}`;
+      time = { rec: recommendedFees.hourFee, t: '60+' };
     }
+
+    return time;
   };
 
   function ShowCustom() {
+    const customFeeInfo = CustomFeeInfo();
     return (
       <div>
         <Row>
@@ -424,10 +430,24 @@ export default function Send({ history }: Props) {
           </Col>
         </Row>
         <Row className="lame-duck">
-          <small className="text-muted">
-            This transaction will be sent with {feeText} sat/vbyte or <b>{calcFee()} sats</b> and has an ETA of confirming within{' '}
-            {recommendedFees ? howLong() : "...can't load feerates"}
-          </small>
+          <div style={{ textAlign: 'center' }}>
+            <small className="text-muted">
+              This transaction will be sent with {feeText} sat/vbyte or <b>{calcFee()} sats</b>
+            </small>
+            <br />
+
+            {customFeeInfo ? (
+              <small className="text-muted">Estimate time until confirmation is {customFeeInfo.t} minutes.</small>
+            ) : (
+              <small className="text-muted">...can't load feerates</small>
+            )}
+            <br />
+            {customFeeInfo && (
+              <small>
+                Recommended fees to get confirmed within {customFeeInfo.t} minutes are {customFeeInfo.rec.toFixed(3)} sat/vbyte
+              </small>
+            )}
+          </div>
         </Row>
       </div>
     );
@@ -447,7 +467,7 @@ export default function Send({ history }: Props) {
         </Col>
         <Row style={{ justifyContent: 'center', margin: '1rem 2rem' }}>
           <small className="text-muted">
-            This is the maximum fee that will be paid. If the fee results less than this, we will refund the remainder to your account.
+            This is the maximum fee that will be paid. If the fee results in less than this, we will refund the remainder to your account.
           </small>
         </Row>
       </FormGroup>
@@ -575,17 +595,16 @@ export default function Send({ history }: Props) {
   // const maxAmount = balance; // TODO: Reduce the tx fee
 
   function isValid(toText: string) {
-    if (!(hi.decodeBolt11(toText) instanceof Error)) { 
-      return true
+    if (!(hi.decodeBolt11(toText) instanceof Error)) {
+      return true;
     }
     if (!(hi.decodeBitcoinAddress(toText) instanceof Error)) {
-      return true
+      return true;
     }
     return false;
   }
   return (
     <div>
-      <ToastContainer />
       <h5 className="main-header">Send</h5>
       <div className="inner-container">
         <Form>
@@ -620,7 +639,7 @@ export default function Send({ history }: Props) {
                 />
                 {amountInput != 0 && amountInput > maxSend ? (
                   <div>
-                    Due to a limitation of blindmixer, you can at most send <code>{maxSend} sat</code>{' '}
+                    Due to a limitation of {GLOBALS.WALLET_NAME}, you can at most send <code>{maxSend} sat</code>{' '}
                   </div>
                 ) : undefined}
               </Col>
@@ -647,7 +666,7 @@ export default function Send({ history }: Props) {
           ) : undefined}
           {/* {sendType.kind === 'lightning' || sendType.kind === "bitcoinInvoice" ? showLightningFeeSelection() : undefined} */}
           {sendType.kind === 'lightning' ? showLightningFeeSelection() : undefined}
-          {sendType.kind === 'bitcoinbip21Invoice' ? (ShowBitcoinInvoiceAddresses()) : undefined}
+          {sendType.kind === 'bitcoinbip21Invoice' ? ShowBitcoinInvoiceAddresses() : undefined}
           {sendType.kind === 'lightning' || sendType.kind === 'bitcoinbip21Invoice' ? showLightningDescription() : undefined}
           {(toPTM === '' && sendType.kind === 'bitcoin') || sendType.kind === 'bitcoinbip21Invoice' ? showBitcoinFeeSelection() : undefined}
           {(sendType.kind === 'bitcoin' && (prioritySelection === 'CUSTOM' || prioritySelection === 'IMMEDIATE')) ||

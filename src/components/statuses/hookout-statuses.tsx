@@ -11,7 +11,6 @@ import * as config from '../../config';
 import fetchTxReceives from '../../wallet/requests/bitcoin-txs';
 import { RequestError } from '../../wallet/requests/make-request';
 import Failed from 'blindmixer-lib/dist/status/failed';
-import { ToastContainer } from 'react-toastify';
 
 type HookoutProps = {
   created: Date;
@@ -22,14 +21,14 @@ type HookoutProps = {
 let blockD: string = '';
 
 export default function HookoutStatuses(props: HookoutProps) {
-  const [CurrentTxid, setCurrentTxid] = useState('');
+  const [currentTxid, setCurrentTxid] = useState('');
   const claimable = props.claimable.toPOD();
   const statuses = useClaimableStatuses(props.claimableHash);
   const [IsConfirmed, hasConfirmed] = useState(true); // prevent false positives when loading
   const [Memo, setMemo] = useState<undefined | string>(undefined);
-  const [Loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  if (!Loading) {
+  if (!loading) {
     blockD = '';
   }
 
@@ -70,7 +69,7 @@ export default function HookoutStatuses(props: HookoutProps) {
         case 'p2wsh':
           return claimable.fee / config.p2wshTransactionWeight;
         case 'p2tr':
-          return claimable.fee / config.p2trTransactionWeight;  
+          return claimable.fee / config.p2trTransactionWeight;
         case 'p2wpkh':
           return claimable.fee / config.p2wpkhTransactionWeight;
       }
@@ -84,7 +83,7 @@ export default function HookoutStatuses(props: HookoutProps) {
         case 'p2wsh':
           return claimable.fee / config.p2wsh;
         case 'p2tr':
-          return claimable.fee / config.p2tr;  
+          return claimable.fee / config.p2tr;
         case 'p2wpkh':
           return claimable.fee / config.p2wpkh;
       }
@@ -107,8 +106,8 @@ export default function HookoutStatuses(props: HookoutProps) {
         }
         if (props.claimable instanceof mp.Acknowledged.default) {
           if (!statuses.some((status) => status instanceof BitcoinTransactionSent) && !statuses.some((status) => status instanceof Failed)) {
-            if (!Loading) {
-              setLoading(!Loading);
+            if (!loading) {
+              setLoading(!loading);
               await wallet.requestStatuses(props.claimableHash);
             }
           }
@@ -182,11 +181,11 @@ export default function HookoutStatuses(props: HookoutProps) {
     return <span>Loading Statuses...</span>;
   };
 
-  const txid = wallet.config.custodian.currency === 'tBTC' ? `https://blockstream.info/testnet/tx/${CurrentTxid}` : `https://blockstream.info/tx/${CurrentTxid}`
-  
+  const txid =
+    wallet.config.custodian.currency === 'tBTC' ? `https://blockstream.info/testnet/tx/${currentTxid}` : `https://blockstream.info/tx/${currentTxid}`;
+
   return (
     <div>
-      <ToastContainer />
       <h5>
         <i className="fad fa-arrow-from-bottom" /> Hookout
       </h5>
@@ -216,9 +215,9 @@ export default function HookoutStatuses(props: HookoutProps) {
             <div className="claimable-text-container">
               <a href={txid} target="_blank" rel="noreferrer">
                 {' '}
-                {CurrentTxid}
+                {currentTxid}
               </a>
-              <CopyToClipboard className="btn btn-light" style={{}} text={CurrentTxid}>
+              <CopyToClipboard className="btn btn-light" style={{}} text={currentTxid}>
                 <i className="fa fa-copy" />
               </CopyToClipboard>
             </div>
@@ -269,14 +268,12 @@ export default function HookoutStatuses(props: HookoutProps) {
             </Col>
           </Row>
         ) : undefined}
-                <Row>
+        <Row>
           <Col sm={{ size: 2, offset: 0 }}>
             <p className="address-title">Decay: </p>
           </Col>
           <Col sm={{ size: 8, offset: 0 }}>
-            <div className="claimable-text-container">
-              {`${claimable.decay} sat`}
-            </div>
+            <div className="claimable-text-container">{`${claimable.decay} sat`}</div>
           </Col>
         </Row>
         <Row>
@@ -288,7 +285,7 @@ export default function HookoutStatuses(props: HookoutProps) {
           </Col>
         </Row>
         {!IsConfirmed ? (
-          <Link to={{ pathname: '/feebump-send', state: { txid: { CurrentTxid } } }}>
+          <Link to={{ pathname: '/feebump-send', state: { currentTxid } }}>
             <button className="btn btn-secondary">Feebump this transaction!</button>
           </Link>
         ) : undefined}
