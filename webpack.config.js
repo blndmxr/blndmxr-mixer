@@ -72,7 +72,7 @@ module.exports = {
 		crossOriginLoading: "anonymous",
 		filename: "[name].[contenthash].js",
 		path: path.resolve(__dirname, "dist"),
-		publicPath: process.env.USE_CDN ? `https://${config.MIXER_NAME}.com/` : "/",
+		publicPath: process.env.USE_CDN ? `https://mixer.${config.WALLET_NAME}.com/` : "/",
 	},
 	devServer: {
 		contentBase: path.join(__dirname, "dist"),
